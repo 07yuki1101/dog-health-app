@@ -64,7 +64,7 @@ export default function DogProfilePage() {
             "🐕"
           )}
         </div>
-        <div>
+        <div className="flex-1">
           <h1 className="text-2xl font-bold text-gray-800">{dog.name}</h1>
           <p className="text-sm text-gray-500">{dog.breed}</p>
           <div className="flex gap-3 mt-1 text-xs text-gray-400">
@@ -73,6 +73,12 @@ export default function DogProfilePage() {
             {latestWeight && <span>⚖️ {latestWeight}kg</span>}
           </div>
         </div>
+        <Link
+          href={`/dogs/${dogId}/edit`}
+          className="text-xs text-gray-400 border border-gray-200 rounded-full px-3 py-1.5 bg-white"
+        >
+          編集
+        </Link>
       </div>
 
       {/* Quick actions */}
