@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
-import { getDog, updateDog } from "@/lib/firestore";
+import { getDog, updateDog, deleteDog } from "@/lib/firestore";
 import { uploadDogPhoto, deletePhotoByURL } from "@/lib/storage";
 import type { Dog } from "@/lib/types";
 
@@ -15,6 +15,7 @@ export default function EditDogPage() {
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const [name, setName] = useState("");
   const [breed, setBreed] = useState("");
@@ -79,6 +80,18 @@ export default function EditDogPage() {
     } catch (err) {
       console.error(err);
       setSubmitting(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!user || !confirm(`このペットのデータをすべて削除しますか？\nリマインドや記録もすべて削除されます。`)) return;
+    setDeleting(true);
+    try {
+      await deleteDog(user.uid, dogId);
+      router.replace("/dogs");
+    } catch (err) {
+      console.error(err);
+      setDeleting(false);
     }
   }
 
@@ -205,12 +218,29 @@ export default function EditDogPage() {
 
         <button
           type="submit"
-          disabled={submitting || !name || !birthDate}
+          disabled={submitting || deleting || !name || !birthDate}
           className="w-full bg-amber-500 text-white font-bold py-4 rounded-2xl shadow-sm disabled:opacity-50 active:scale-98 transition-all mt-2"
         >
           {submitting ? "保存中..." : "保存する"}
         </button>
       </form>
+
+      {/* 削除ボタン */}
+      <div className="mt-8 mb-10">
+        <div className="border-t border-gray-100 pt-6">
+          <p className="text-xs text-gray-400 mb-3 text-center">
+            削除するとリマインドや記録もすべて消えます
+          </p>
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={deleting || submitting}
+            className="w-full border-2 border-red-200 text-red-500 font-medium py-3 rounded-2xl disabled:opacity-50 active:scale-98 transition-all"
+          >
+            {deleting ? "削除中..." : "このペットを削除する"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
