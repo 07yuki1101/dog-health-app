@@ -1,5 +1,11 @@
 {
   "framework": "nextjs",
   "buildCommand": "next build",
-  "outputDirectory": ".next"
+  "outputDirectory": ".next",
+  "crons": [
+    {
+      "path": "/api/send-notifications",
+      "schedule": "0 23 * * *"
+    }
+  ]
 }

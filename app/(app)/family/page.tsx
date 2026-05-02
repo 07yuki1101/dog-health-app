@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { getFamily } from "@/lib/firestore";
+import { enableNotifications, getNotificationPermission } from "@/lib/messaging";
 import type { Family } from "@/lib/types";
 
 export default function FamilyPage() {
@@ -10,6 +11,7 @@ export default function FamilyPage() {
   const [family, setFamily] = useState<Family | null>(null);
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [notifStatus, setNotifStatus] = useState<NotificationPermission | "unsupported" | "loading">("loading");
 
   useEffect(() => {
     if (!familyId) return;
@@ -17,6 +19,7 @@ export default function FamilyPage() {
       setFamily(f);
       setLoading(false);
     });
+    setNotifStatus(getNotificationPermission());
   }, [familyId]);
 
   async function copyCode() {
@@ -24,6 +27,19 @@ export default function FamilyPage() {
     await navigator.clipboard.writeText(family.inviteCode);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  }
+
+  async function handleEnableNotifications() {
+    if (!user) return;
+    setNotifStatus("loading");
+    const result = await enableNotifications(user.uid);
+    if (result === "granted") {
+      setNotifStatus("granted");
+    } else if (result === "denied") {
+      setNotifStatus("denied");
+    } else {
+      setNotifStatus("unsupported");
+    }
   }
 
   if (loading) {
@@ -37,7 +53,7 @@ export default function FamilyPage() {
   const members = Object.entries(family?.memberInfo ?? {});
 
   return (
-    <div className="max-w-lg mx-auto px-4 pt-6">
+    <div className="max-w-lg mx-auto px-4 pt-6 pb-24">
       <h1 className="text-xl font-bold text-gray-800 mb-6">家族の管理</h1>
 
       {/* 招待コード */}
@@ -61,6 +77,47 @@ export default function FamilyPage() {
         <p className="text-xs text-gray-400 mt-3">
           このコードを家族に共有してください。参加した人と犬の情報・記録を共有できます。
         </p>
+      </section>
+
+      {/* プッシュ通知 */}
+      <section className="bg-white rounded-2xl p-5 shadow-sm mb-5">
+        <p className="text-sm font-semibold text-gray-500 mb-1">プッシュ通知</p>
+        <p className="text-xs text-gray-400 mb-4">
+          リマインダーの期限日に通知を受け取れます。
+        </p>
+        {notifStatus === "loading" && (
+          <p className="text-sm text-gray-400">確認中...</p>
+        )}
+        {notifStatus === "granted" && (
+          <div className="flex items-center gap-2 text-green-600">
+            <span className="text-lg">🔔</span>
+            <span className="text-sm font-medium">通知が有効です</span>
+          </div>
+        )}
+        {notifStatus === "denied" && (
+          <div>
+            <div className="flex items-center gap-2 text-red-500 mb-2">
+              <span className="text-lg">🔕</span>
+              <span className="text-sm font-medium">通知がブロックされています</span>
+            </div>
+            <p className="text-xs text-gray-400">
+              ブラウザの設定から通知を許可してください。
+            </p>
+          </div>
+        )}
+        {notifStatus === "unsupported" && (
+          <p className="text-sm text-gray-400">
+            このブラウザはプッシュ通知に対応していません。
+          </p>
+        )}
+        {notifStatus === "default" && (
+          <button
+            onClick={handleEnableNotifications}
+            className="w-full py-3 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-semibold rounded-xl transition-all"
+          >
+            🔔 通知を有効にする
+          </button>
+        )}
       </section>
 
       {/* メンバー一覧 */}

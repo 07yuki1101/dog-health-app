@@ -2,6 +2,7 @@ import { initializeApp, getApps, type FirebaseApp } from "firebase/app";
 import { type Auth, getAuth, GoogleAuthProvider } from "firebase/auth";
 import { type Firestore, getFirestore } from "firebase/firestore";
 import { type FirebaseStorage, getStorage } from "firebase/storage";
+import type { Messaging } from "firebase/messaging";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -16,6 +17,7 @@ let _app: FirebaseApp | undefined;
 let _auth: Auth | undefined;
 let _db: Firestore | undefined;
 let _storage: FirebaseStorage | undefined;
+let _messaging: Messaging | undefined;
 
 function app(): FirebaseApp {
   if (!_app) {
@@ -40,6 +42,15 @@ export function getFirebaseStorage(): FirebaseStorage {
 }
 
 export const googleProvider = new GoogleAuthProvider();
+
+export async function getFirebaseMessagingAsync(): Promise<Messaging | null> {
+  if (typeof window === "undefined") return null;
+  if (_messaging) return _messaging;
+  const { getMessaging, isSupported } = await import("firebase/messaging");
+  if (!(await isSupported())) return null;
+  _messaging = getMessaging(app());
+  return _messaging;
+}
 
 // Convenience re-exports for components that call once auth is confirmed
 export { getAuth, getFirestore, getStorage };

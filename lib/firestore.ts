@@ -35,6 +35,10 @@ export async function getUserDoc(userId: string): Promise<UserDoc | null> {
   return snap.exists() ? (snap.data() as UserDoc) : null;
 }
 
+export async function saveFCMToken(userId: string, fcmToken: string): Promise<void> {
+  await updateDoc(userDocRef(userId), { fcmToken });
+}
+
 export function subscribeUserDoc(userId: string, cb: (doc: UserDoc | null) => void): Unsubscribe {
   return onSnapshot(userDocRef(userId), (snap) => {
     cb(snap.exists() ? (snap.data() as UserDoc) : null);
