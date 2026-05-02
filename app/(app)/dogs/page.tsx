@@ -17,17 +17,17 @@ function calcAge(birthDate: string) {
 }
 
 export default function DogsPage() {
-  const { user } = useAuth();
+  const { user, familyId } = useAuth();
   const [dogs, setDogs] = useState<Dog[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
-    getDogs(user.uid).then((d) => {
+    if (!user || !familyId) return;
+    getDogs(familyId).then((d) => {
       setDogs(d);
       setLoading(false);
     });
-  }, [user]);
+  }, [user, familyId]);
 
   return (
     <div className="max-w-lg mx-auto px-4 pt-6">

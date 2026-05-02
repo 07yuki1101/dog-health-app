@@ -8,17 +8,20 @@ import { useAuth } from "@/components/AuthProvider";
 import { BottomNav } from "@/components/BottomNav";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, familyId, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
-  // dogId があればボトムナブをそのdog用に変える
   const dogIdMatch = pathname.match(/\/dogs\/([^/]+)/);
   const dogId = dogIdMatch?.[1];
 
   useEffect(() => {
-    if (!loading && !user) router.replace("/login");
-  }, [user, loading, router]);
+    if (loading) return;
+    if (!user) { router.replace("/login"); return; }
+    if (!familyId && pathname !== "/onboarding") {
+      router.replace("/onboarding");
+    }
+  }, [user, familyId, loading, pathname, router]);
 
   if (loading) {
     return (
@@ -29,11 +32,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   if (!user) return null;
+  if (!familyId && pathname !== "/onboarding") return null;
+
+  const showNav = pathname !== "/onboarding";
 
   return (
-    <div className="min-h-screen pb-20">
+    <div className={showNav ? "min-h-screen pb-20" : "min-h-screen"}>
       {children}
-      <BottomNav dogId={dogId ?? undefined} />
+      {showNav && <BottomNav dogId={dogId ?? undefined} />}
     </div>
   );
 }

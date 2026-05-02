@@ -19,7 +19,7 @@ function calcAge(birthDate: string) {
 
 export default function DogProfilePage() {
   const { dogId } = useParams<{ dogId: string }>();
-  const { user } = useAuth();
+  const { user, familyId } = useAuth();
   const router = useRouter();
   const [dog, setDog] = useState<Dog | null>(null);
   const [reminders, setReminders] = useState<Reminder[]>([]);
@@ -27,11 +27,11 @@ export default function DogProfilePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !familyId) return;
     Promise.all([
-      getDog(user.uid, dogId),
-      getReminders(user.uid, dogId),
-      getLogs(user.uid, dogId),
+      getDog(familyId!, dogId),
+      getReminders(familyId!, dogId),
+      getLogs(familyId!, dogId),
     ]).then(([d, rs, ls]) => {
       if (!d) { router.replace("/dogs"); return; }
       setDog(d);
@@ -39,7 +39,7 @@ export default function DogProfilePage() {
       setLogs(ls.slice(0, 3));
       setLoading(false);
     });
-  }, [user, dogId, router]);
+  }, [user, familyId, dogId, router]);
 
   const latestWeight = logs.find((l) => l.type === "weight")?.weight;
 

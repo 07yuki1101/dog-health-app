@@ -2,37 +2,33 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { signOut } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase";
 import { useAuth } from "@/components/AuthProvider";
 import { getDogs, getUpcomingReminders } from "@/lib/firestore";
 import type { Dog, Reminder } from "@/lib/types";
-import { REMINDER_LABELS } from "@/lib/types";
 
 export default function DashboardPage() {
-  const { user } = useAuth();
-  const router = useRouter();
+  const { user, familyId } = useAuth();
   const [dogs, setDogs] = useState<Dog[]>([]);
   const [reminders, setReminders] = useState<{ dog: Dog; reminder: Reminder }[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
+    if (!familyId) return;
     (async () => {
-      const dogList = await getDogs(user.uid);
+      const dogList = await getDogs(familyId);
       setDogs(dogList);
-
       const all: { dog: Dog; reminder: Reminder }[] = [];
       for (const dog of dogList) {
-        const rs = await getUpcomingReminders(user.uid, dog.id);
+        const rs = await getUpcomingReminders(familyId, dog.id);
         rs.slice(0, 3).forEach((r) => all.push({ dog, reminder: r }));
       }
       all.sort((a, b) => a.reminder.dueDate.localeCompare(b.reminder.dueDate));
       setReminders(all.slice(0, 5));
       setLoading(false);
     })();
-  }, [user]);
+  }, [familyId]);
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -45,7 +41,6 @@ export default function DashboardPage() {
 
   return (
     <div className="max-w-lg mx-auto px-4 pt-6">
-      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-bold text-gray-800">
@@ -61,7 +56,6 @@ export default function DashboardPage() {
         </button>
       </div>
 
-      {/* Upcoming reminders */}
       <section className="mb-6">
         <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
           直近のリマインド
@@ -76,10 +70,7 @@ export default function DashboardPage() {
           <div className="bg-white rounded-2xl p-6 text-center shadow-sm">
             <p className="text-gray-400 text-sm">リマインドはありません</p>
             {dogs.length > 0 && (
-              <Link
-                href={`/dogs/${dogs[0].id}/reminders/new`}
-                className="inline-block mt-3 text-amber-600 text-sm font-medium"
-              >
+              <Link href={`/dogs/${dogs[0].id}/reminders/new`} className="inline-block mt-3 text-amber-600 text-sm font-medium">
                 + リマインドを追加する
               </Link>
             )}
@@ -95,11 +86,7 @@ export default function DashboardPage() {
                   className="flex items-center gap-3 bg-white rounded-2xl px-4 py-3 shadow-sm active:scale-98 transition-transform"
                 >
                   <span className="text-2xl">
-                    {reminder.type === "medication"
-                      ? "💊"
-                      : reminder.type === "vaccine"
-                      ? "💉"
-                      : "🏥"}
+                    {reminder.type === "medication" ? "💊" : reminder.type === "vaccine" ? "💉" : "🏥"}
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-gray-800 truncate">{reminder.title}</p>
@@ -113,13 +100,10 @@ export default function DashboardPage() {
         )}
       </section>
 
-      {/* Dogs quick access */}
       <section className="mb-6">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">わんこ</h2>
-          <Link href="/dogs" className="text-xs text-amber-600 font-medium">
-            すべて見る
-          </Link>
+          <Link href="/dogs" className="text-xs text-amber-600 font-medium">すべて見る</Link>
         </div>
         {loading ? (
           <div className="h-24 bg-gray-100 rounded-2xl animate-pulse" />
@@ -142,16 +126,14 @@ export default function DashboardPage() {
                 <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center text-2xl mb-2 overflow-hidden">
                   {dog.photoURL ? (
                     <img src={dog.photoURL} alt={dog.name} className="w-full h-full object-cover" />
-                  ) : (
-                    "🐕"
-                  )}
+                  ) : "🐕"}
                 </div>
                 <span className="text-sm font-medium text-gray-700">{dog.name}</span>
               </Link>
             ))}
             <Link
               href="/dogs/new"
-              className="flex-shrink-0 flex flex-col items-center justify-center bg-white rounded-2xl px-5 py-4 shadow-sm border-2 border-dashed border-gray-200 active:scale-95 transition-transform"
+              className="flex-shrink-0 flex flex-col items-center justify-center bg-white rounded-2xl px-5 py-4 shadow-sm border-2 border-dashed border-gray-200"
             >
               <span className="text-2xl text-gray-300 mb-2">+</span>
               <span className="text-xs text-gray-400">追加</span>

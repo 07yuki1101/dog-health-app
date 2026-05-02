@@ -9,7 +9,7 @@ import type { Dog } from "@/lib/types";
 
 export default function EditDogPage() {
   const { dogId } = useParams<{ dogId: string }>();
-  const { user } = useAuth();
+  const { user, familyId } = useAuth();
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -29,8 +29,8 @@ export default function EditDogPage() {
   const [photoRemoved, setPhotoRemoved] = useState(false);
 
   useEffect(() => {
-    if (!user) return;
-    getDog(user.uid, dogId).then((dog) => {
+    if (!user || !familyId) return;
+    getDog(familyId!, dogId).then((dog) => {
       if (!dog) { router.replace("/dogs"); return; }
       setName(dog.name);
       setBreed(dog.breed ?? "");
@@ -39,7 +39,7 @@ export default function EditDogPage() {
       setCurrentPhotoURL(dog.photoURL ?? null);
       setLoading(false);
     });
-  }, [user, dogId, router]);
+  }, [user, familyId, dogId, router]);
 
   function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -60,7 +60,7 @@ export default function EditDogPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!user || !name || !birthDate) return;
+    if (!user || !familyId || !name || !birthDate) return;
     setSubmitting(true);
     try {
       const updates: Partial<Dog> = { name, breed, birthDate, gender };
@@ -68,14 +68,14 @@ export default function EditDogPage() {
       if (newPhotoFile) {
         // 既存写真を削除してから新しい写真をアップロード
         if (currentPhotoURL) await deletePhotoByURL(currentPhotoURL);
-        updates.photoURL = await uploadDogPhoto(user.uid, dogId, newPhotoFile);
+        updates.photoURL = await uploadDogPhoto(familyId!, dogId, newPhotoFile);
       } else if (photoRemoved && currentPhotoURL) {
         // 写真を削除（Storageからも削除）
         await deletePhotoByURL(currentPhotoURL);
         updates.photoURL = "";
       }
 
-      await updateDog(user.uid, dogId, updates);
+      await updateDog(familyId!, dogId, updates);
       router.replace(`/dogs/${dogId}`);
     } catch (err) {
       console.error(err);
@@ -84,10 +84,10 @@ export default function EditDogPage() {
   }
 
   async function handleDelete() {
-    if (!user || !confirm(`このペットのデータをすべて削除しますか？\nリマインドや記録もすべて削除されます。`)) return;
+    if (!user || !familyId || !confirm(`このペットのデータをすべて削除しますか？\nリマインドや記録もすべて削除されます。`)) return;
     setDeleting(true);
     try {
-      await deleteDog(user.uid, dogId);
+      await deleteDog(familyId!, dogId);
       router.replace("/dogs");
     } catch (err) {
       console.error(err);

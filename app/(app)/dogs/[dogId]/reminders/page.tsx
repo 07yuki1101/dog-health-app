@@ -20,14 +20,14 @@ function dueDateStatus(dueDate: string, isDone: boolean) {
 
 export default function RemindersPage() {
   const { dogId } = useParams<{ dogId: string }>();
-  const { user } = useAuth();
+  const { user, familyId } = useAuth();
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"upcoming" | "done">("upcoming");
 
   async function load() {
-    if (!user) return;
-    const rs = await getReminders(user.uid, dogId);
+    if (!user || !familyId) return;
+    const rs = await getReminders(familyId!, dogId);
     setReminders(rs);
     setLoading(false);
   }
@@ -35,14 +35,14 @@ export default function RemindersPage() {
   useEffect(() => { load(); }, [user, dogId]);
 
   async function toggleDone(r: Reminder) {
-    if (!user) return;
-    await updateReminder(user.uid, dogId, r.id, { isDone: !r.isDone });
+    if (!user || !familyId) return;
+    await updateReminder(familyId!, dogId, r.id, { isDone: !r.isDone });
     setReminders((prev) => prev.map((x) => (x.id === r.id ? { ...x, isDone: !x.isDone } : x)));
   }
 
   async function handleDelete(id: string) {
-    if (!user || !confirm("削除しますか？")) return;
-    await deleteReminder(user.uid, dogId, id);
+    if (!user || !familyId || !confirm("削除しますか？")) return;
+    await deleteReminder(familyId!, dogId, id);
     setReminders((prev) => prev.filter((r) => r.id !== id));
   }
 

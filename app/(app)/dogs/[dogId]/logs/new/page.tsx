@@ -18,7 +18,7 @@ const LOG_TYPES: { value: LogType; label: string; emoji: string }[] = [
 
 export default function NewLogPage() {
   const { dogId } = useParams<{ dogId: string }>();
-  const { user } = useAuth();
+  const { user, familyId } = useAuth();
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -39,20 +39,21 @@ export default function NewLogPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!user) return;
+    if (!user || !familyId) return;
     setSubmitting(true);
     try {
       let photoURL: string | undefined;
       if (photoFile) {
-        photoURL = await uploadPhoto(user.uid, dogId, photoFile);
+        photoURL = await uploadPhoto(familyId!, dogId, photoFile);
       }
-      await addLog(user.uid, dogId, {
+      await addLog(familyId!, dogId, {
         dogId,
         type,
         date,
         ...(type === "weight" && weight ? { weight: parseFloat(weight) } : {}),
         ...(note ? { note } : {}),
         ...(photoURL ? { photoURL } : {}),
+        createdBy: user.uid,
       });
       router.replace(`/dogs/${dogId}/logs`);
     } catch (err) {

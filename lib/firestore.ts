@@ -2,6 +2,7 @@ import {
   collection,
   doc,
   addDoc,
+  setDoc,
   updateDoc,
   deleteDoc,
   getDocs,
@@ -11,112 +12,192 @@ import {
   where,
   serverTimestamp,
   writeBatch,
+  onSnapshot,
+  type Unsubscribe,
 } from "firebase/firestore";
 import { getFirebaseDb } from "./firebase";
 import { deletePhotoByURL } from "./storage";
-import type { Dog, Reminder, HealthLog } from "./types";
+import type { Dog, Reminder, HealthLog, Family, UserDoc } from "./types";
 
 const db = () => getFirebaseDb();
 
-// Dogs
-const dogsRef = (userId: string) => collection(db(), "users", userId, "dogs");
-const dogRef = (userId: string, dogId: string) => doc(db(), "users", userId, "dogs", dogId);
-
-export async function getDogs(userId: string): Promise<Dog[]> {
-  const snap = await getDocs(query(dogsRef(userId), orderBy("createdAt", "desc")));
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Dog));
+// ─── Invite code ──────────────────────────────────────────────
+function generateInviteCode(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
 }
 
-export async function getDog(userId: string, dogId: string): Promise<Dog | null> {
-  const snap = await getDoc(dogRef(userId, dogId));
-  if (!snap.exists()) return null;
-  return { id: snap.id, ...snap.data() } as Dog;
+// ─── User doc ─────────────────────────────────────────────────
+export const userDocRef = (userId: string) => doc(db(), "users", userId);
+
+export async function getUserDoc(userId: string): Promise<UserDoc | null> {
+  const snap = await getDoc(userDocRef(userId));
+  return snap.exists() ? (snap.data() as UserDoc) : null;
 }
 
-export async function addDog(userId: string, data: Omit<Dog, "id" | "createdAt">) {
-  return addDoc(dogsRef(userId), { ...data, createdAt: serverTimestamp() });
+export function subscribeUserDoc(userId: string, cb: (doc: UserDoc | null) => void): Unsubscribe {
+  return onSnapshot(userDocRef(userId), (snap) => {
+    cb(snap.exists() ? (snap.data() as UserDoc) : null);
+  });
 }
 
-export async function updateDog(userId: string, dogId: string, data: Partial<Dog>) {
-  return updateDoc(dogRef(userId, dogId), data);
+// ─── Family ───────────────────────────────────────────────────
+const familyRef = (familyId: string) => doc(db(), "families", familyId);
+
+export async function getFamily(familyId: string): Promise<Family | null> {
+  const snap = await getDoc(familyRef(familyId));
+  return snap.exists() ? { id: snap.id, ...snap.data() } as Family : null;
 }
 
-// Reminders
-const remindersRef = (userId: string, dogId: string) =>
-  collection(db(), "users", userId, "dogs", dogId, "reminders");
+export async function createFamily(
+  userId: string,
+  displayName: string,
+  photoURL?: string
+): Promise<string> {
+  const familyRef_ = doc(collection(db(), "families"));
+  const inviteCode = generateInviteCode();
 
-const reminderRef = (userId: string, dogId: string, reminderId: string) =>
-  doc(db(), "users", userId, "dogs", dogId, "reminders", reminderId);
+  await setDoc(familyRef_, {
+    inviteCode,
+    memberIds: [userId],
+    memberInfo: { [userId]: { displayName, ...(photoURL ? { photoURL } : {}) } },
+    createdBy: userId,
+    createdAt: serverTimestamp(),
+  });
 
-export async function getReminders(userId: string, dogId: string): Promise<Reminder[]> {
-  const snap = await getDocs(query(remindersRef(userId, dogId), orderBy("dueDate", "asc")));
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Reminder));
+  await setDoc(userDocRef(userId), {
+    familyId: familyRef_.id,
+    displayName,
+    email: "",
+    ...(photoURL ? { photoURL } : {}),
+  });
+
+  return familyRef_.id;
 }
 
-export async function getUpcomingReminders(userId: string, dogId: string): Promise<Reminder[]> {
+export async function joinFamily(
+  userId: string,
+  inviteCode: string,
+  displayName: string,
+  photoURL?: string
+): Promise<string | null> {
+  const snap = await getDocs(
+    query(collection(db(), "families"), where("inviteCode", "==", inviteCode.toUpperCase()))
+  );
+  if (snap.empty) return null;
+
+  const familyDoc = snap.docs[0];
+  const familyId = familyDoc.id;
+
+  await updateDoc(familyDoc.ref, {
+    memberIds: [...(familyDoc.data().memberIds ?? []), userId],
+    [`memberInfo.${userId}`]: { displayName, ...(photoURL ? { photoURL } : {}) },
+  });
+
+  await setDoc(userDocRef(userId), {
+    familyId,
+    displayName,
+    email: "",
+    ...(photoURL ? { photoURL } : {}),
+  });
+
+  return familyId;
+}
+
+// ─── Dogs ─────────────────────────────────────────────────────
+const dogsRef = (familyId: string) => collection(db(), "families", familyId, "dogs");
+const dogRef = (familyId: string, dogId: string) =>
+  doc(db(), "families", familyId, "dogs", dogId);
+
+export async function getDogs(familyId: string): Promise<Dog[]> {
+  const snap = await getDocs(query(dogsRef(familyId), orderBy("createdAt", "desc")));
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Dog);
+}
+
+export async function getDog(familyId: string, dogId: string): Promise<Dog | null> {
+  const snap = await getDoc(dogRef(familyId, dogId));
+  return snap.exists() ? ({ id: snap.id, ...snap.data() } as Dog) : null;
+}
+
+export async function addDog(familyId: string, data: Omit<Dog, "id" | "createdAt">) {
+  return addDoc(dogsRef(familyId), { ...data, createdAt: serverTimestamp() });
+}
+
+export async function updateDog(familyId: string, dogId: string, data: Partial<Dog>) {
+  return updateDoc(dogRef(familyId, dogId), data);
+}
+
+// ─── Reminders ────────────────────────────────────────────────
+const remindersRef = (familyId: string, dogId: string) =>
+  collection(db(), "families", familyId, "dogs", dogId, "reminders");
+const reminderRef = (familyId: string, dogId: string, reminderId: string) =>
+  doc(db(), "families", familyId, "dogs", dogId, "reminders", reminderId);
+
+export async function getReminders(familyId: string, dogId: string): Promise<Reminder[]> {
+  const snap = await getDocs(query(remindersRef(familyId, dogId), orderBy("dueDate", "asc")));
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Reminder);
+}
+
+export async function getUpcomingReminders(familyId: string, dogId: string): Promise<Reminder[]> {
   const today = new Date().toISOString().split("T")[0];
   const snap = await getDocs(
     query(
-      remindersRef(userId, dogId),
+      remindersRef(familyId, dogId),
       where("isDone", "==", false),
       where("dueDate", ">=", today),
       orderBy("dueDate", "asc")
     )
   );
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Reminder));
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Reminder);
 }
 
 export async function addReminder(
-  userId: string,
+  familyId: string,
   dogId: string,
   data: Omit<Reminder, "id" | "createdAt">
 ) {
-  return addDoc(remindersRef(userId, dogId), { ...data, createdAt: serverTimestamp() });
+  return addDoc(remindersRef(familyId, dogId), { ...data, createdAt: serverTimestamp() });
 }
 
 export async function updateReminder(
-  userId: string,
+  familyId: string,
   dogId: string,
   reminderId: string,
   data: Partial<Reminder>
 ) {
-  return updateDoc(reminderRef(userId, dogId, reminderId), data);
+  return updateDoc(reminderRef(familyId, dogId, reminderId), data);
 }
 
-export async function deleteReminder(userId: string, dogId: string, reminderId: string) {
-  return deleteDoc(reminderRef(userId, dogId, reminderId));
+export async function deleteReminder(familyId: string, dogId: string, reminderId: string) {
+  return deleteDoc(reminderRef(familyId, dogId, reminderId));
 }
 
-// Health Logs
-const logsRef = (userId: string, dogId: string) =>
-  collection(db(), "users", userId, "dogs", dogId, "logs");
+// ─── Health Logs ──────────────────────────────────────────────
+const logsRef = (familyId: string, dogId: string) =>
+  collection(db(), "families", familyId, "dogs", dogId, "logs");
+const logRef = (familyId: string, dogId: string, logId: string) =>
+  doc(db(), "families", familyId, "dogs", dogId, "logs", logId);
 
-const logRef = (userId: string, dogId: string, logId: string) =>
-  doc(db(), "users", userId, "dogs", dogId, "logs", logId);
-
-export async function getLogs(userId: string, dogId: string): Promise<HealthLog[]> {
-  const snap = await getDocs(query(logsRef(userId, dogId), orderBy("date", "desc")));
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as HealthLog));
+export async function getLogs(familyId: string, dogId: string): Promise<HealthLog[]> {
+  const snap = await getDocs(query(logsRef(familyId, dogId), orderBy("date", "desc")));
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as HealthLog);
 }
 
 export async function addLog(
-  userId: string,
+  familyId: string,
   dogId: string,
   data: Omit<HealthLog, "id" | "createdAt">
 ) {
-  return addDoc(logsRef(userId, dogId), { ...data, createdAt: serverTimestamp() });
+  return addDoc(logsRef(familyId, dogId), { ...data, createdAt: serverTimestamp() });
 }
 
-export async function deleteLog(userId: string, dogId: string, logId: string) {
-  return deleteDoc(logRef(userId, dogId, logId));
+export async function deleteLog(familyId: string, dogId: string, logId: string) {
+  return deleteDoc(logRef(familyId, dogId, logId));
 }
 
-// Dog全削除（サブコレクション・Storage写真含む）
-export async function deleteDog(userId: string, dogId: string): Promise<void> {
-  const db_ = db();
-
-  // ログの写真をStorageから削除
-  const logSnap = await getDocs(logsRef(userId, dogId));
+// ─── Dog 全削除 ───────────────────────────────────────────────
+export async function deleteDog(familyId: string, dogId: string): Promise<void> {
+  const logSnap = await getDocs(logsRef(familyId, dogId));
   await Promise.all(
     logSnap.docs
       .map((d) => (d.data() as HealthLog).photoURL)
@@ -124,18 +205,16 @@ export async function deleteDog(userId: string, dogId: string): Promise<void> {
       .map((url) => deletePhotoByURL(url!))
   );
 
-  // 犬のプロフィール写真をStorageから削除
-  const dogSnap = await getDoc(dogRef(userId, dogId));
+  const dogSnap = await getDoc(dogRef(familyId, dogId));
   const photoURL = dogSnap.exists() ? (dogSnap.data() as Dog).photoURL : undefined;
   if (photoURL) await deletePhotoByURL(photoURL);
 
-  // Firestoreのサブコレクション・ドキュメントをバッチ削除
-  const batch = writeBatch(db_);
+  const batch = writeBatch(db());
   logSnap.docs.forEach((d) => batch.delete(d.ref));
 
-  const reminderSnap = await getDocs(remindersRef(userId, dogId));
+  const reminderSnap = await getDocs(remindersRef(familyId, dogId));
   reminderSnap.docs.forEach((d) => batch.delete(d.ref));
 
-  batch.delete(dogRef(userId, dogId));
+  batch.delete(dogRef(familyId, dogId));
   await batch.commit();
 }

@@ -3,11 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const navItems = [
-  { href: "/dashboard", label: "ホーム", icon: "🏠" },
-  { href: "/dogs", label: "わんこ", icon: "🐕" },
-];
-
 export function BottomNav({ dogId }: { dogId?: string }) {
   const pathname = usePathname();
 
@@ -17,14 +12,19 @@ export function BottomNav({ dogId }: { dogId?: string }) {
         { href: `/dogs/${dogId}`, label: "プロフィール", icon: "🐕" },
         { href: `/dogs/${dogId}/reminders`, label: "リマインド", icon: "🔔" },
         { href: `/dogs/${dogId}/logs`, label: "記録", icon: "📋" },
+        { href: "/family", label: "家族", icon: "👨‍👩‍👧" },
       ]
-    : navItems;
+    : [
+        { href: "/dashboard", label: "ホーム", icon: "🏠" },
+        { href: "/dogs", label: "わんこ", icon: "🐕" },
+        { href: "/family", label: "家族", icon: "👨‍👩‍👧" },
+      ];
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 safe-area-pb z-50">
       <div className="flex">
         {items.map((item) => {
-          const active = pathname === item.href || pathname.startsWith(item.href + "/");
+          const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href + "/"));
           return (
             <Link
               key={item.href}

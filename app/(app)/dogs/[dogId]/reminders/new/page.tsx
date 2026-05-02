@@ -14,7 +14,7 @@ const TYPES: { value: ReminderType; label: string; emoji: string }[] = [
 
 export default function NewReminderPage() {
   const { dogId } = useParams<{ dogId: string }>();
-  const { user } = useAuth();
+  const { user, familyId } = useAuth();
   const router = useRouter();
 
   const [type, setType] = useState<ReminderType>("medication");
@@ -27,10 +27,10 @@ export default function NewReminderPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!user || !title || !dueDate) return;
+    if (!user || !familyId || !title || !dueDate) return;
     setSubmitting(true);
     try {
-      await addReminder(user.uid, dogId, {
+      await addReminder(familyId!, dogId, {
         dogId,
         type,
         title,
@@ -39,6 +39,7 @@ export default function NewReminderPage() {
         recurring,
         ...(recurring ? { intervalDays } : {}),
         isDone: false,
+        createdBy: user.uid,
       });
       router.replace(`/dogs/${dogId}/reminders`);
     } catch (err) {

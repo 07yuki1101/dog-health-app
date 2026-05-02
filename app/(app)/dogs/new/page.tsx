@@ -7,7 +7,7 @@ import { addDog } from "@/lib/firestore";
 import { uploadDogPhoto } from "@/lib/storage";
 
 export default function NewDogPage() {
-  const { user } = useAuth();
+  const { user, familyId } = useAuth();
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -28,20 +28,21 @@ export default function NewDogPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!user || !name || !birthDate) return;
+    if (!user || !familyId || !name || !birthDate) return;
     setSubmitting(true);
     try {
-      const docRef = await addDog(user.uid, {
-        userId: user.uid,
+      const docRef = await addDog(familyId, {
+        familyId,
         name,
         breed,
         birthDate,
         gender,
+        createdBy: user.uid,
       });
       if (photoFile) {
-        const photoURL = await uploadDogPhoto(user.uid, docRef.id, photoFile);
+        const photoURL = await uploadDogPhoto(familyId, docRef.id, photoFile);
         const { updateDog } = await import("@/lib/firestore");
-        await updateDog(user.uid, docRef.id, { photoURL });
+        await updateDog(familyId, docRef.id, { photoURL });
       }
       router.replace(`/dogs/${docRef.id}`);
     } catch (err) {

@@ -46,22 +46,22 @@ function formatDate(dateStr: string) {
 
 export default function LogsPage() {
   const { dogId } = useParams<{ dogId: string }>();
-  const { user } = useAuth();
+  const { user, familyId } = useAuth();
   const [logs, setLogs] = useState<HealthLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState<LogType | "all">("all");
 
   useEffect(() => {
-    if (!user) return;
-    getLogs(user.uid, dogId).then((ls) => {
+    if (!user || !familyId) return;
+    getLogs(familyId!, dogId).then((ls) => {
       setLogs(ls);
       setLoading(false);
     });
-  }, [user, dogId]);
+  }, [user, familyId, dogId]);
 
   async function handleDelete(logId: string) {
-    if (!user || !confirm("この記録を削除しますか？")) return;
-    await deleteLog(user.uid, dogId, logId);
+    if (!user || !familyId || !confirm("この記録を削除しますか？")) return;
+    await deleteLog(familyId!, dogId, logId);
     setLogs((prev) => prev.filter((l) => l.id !== logId));
   }
 
