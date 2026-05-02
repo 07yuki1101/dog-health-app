@@ -13,6 +13,7 @@ import {
   serverTimestamp,
   writeBatch,
   onSnapshot,
+  deleteField,
   type Unsubscribe,
 } from "firebase/firestore";
 import { getFirebaseDb } from "./firebase";
@@ -106,6 +107,53 @@ export async function joinFamily(
   });
 
   return familyId;
+}
+
+export async function leaveFamily(userId: string, familyId: string): Promise<void> {
+  const snap = await getDoc(familyRef(familyId));
+  if (!snap.exists()) return;
+  const data = snap.data() as Family;
+
+  const newMemberIds = data.memberIds.filter((id) => id !== userId);
+  const newMemberInfo = { ...data.memberInfo };
+  delete newMemberInfo[userId];
+
+  await updateDoc(familyRef(familyId), {
+    memberIds: newMemberIds,
+    memberInfo: newMemberInfo,
+  });
+  await updateDoc(userDocRef(userId), { familyId: deleteField() });
+}
+
+export async function deleteFamily(familyId: string, memberIds: string[]): Promise<void> {
+  const dogSnap = await getDocs(dogsRef(familyId));
+
+  for (const dogDoc of dogSnap.docs) {
+    const dogId = dogDoc.id;
+
+    const logSnap = await getDocs(logsRef(familyId, dogId));
+    await Promise.all(
+      logSnap.docs
+        .map((d) => (d.data() as HealthLog).photoURL)
+        .filter(Boolean)
+        .map((url) => deletePhotoByURL(url!))
+    );
+
+    const dogPhotoURL = (dogDoc.data() as Dog).photoURL;
+    if (dogPhotoURL) await deletePhotoByURL(dogPhotoURL);
+
+    const batch = writeBatch(db());
+    logSnap.docs.forEach((d) => batch.delete(d.ref));
+    const reminderSnap = await getDocs(remindersRef(familyId, dogId));
+    reminderSnap.docs.forEach((d) => batch.delete(d.ref));
+    batch.delete(dogDoc.ref);
+    await batch.commit();
+  }
+
+  await Promise.all(
+    memberIds.map((uid) => updateDoc(userDocRef(uid), { familyId: deleteField() }))
+  );
+  await deleteDoc(familyRef(familyId));
 }
 
 // ─── Dogs ─────────────────────────────────────────────────────

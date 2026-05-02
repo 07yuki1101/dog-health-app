@@ -1,17 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
-import { getFamily } from "@/lib/firestore";
+import { getFamily, leaveFamily, deleteFamily } from "@/lib/firestore";
 import { enableNotifications, getNotificationPermission } from "@/lib/messaging";
 import type { Family } from "@/lib/types";
 
 export default function FamilyPage() {
   const { user, familyId } = useAuth();
+  const router = useRouter();
   const [family, setFamily] = useState<Family | null>(null);
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
   const [notifStatus, setNotifStatus] = useState<NotificationPermission | "unsupported" | "loading">("loading");
+  const [dissolving, setDissolving] = useState(false);
 
   useEffect(() => {
     if (!familyId) return;
@@ -33,12 +36,35 @@ export default function FamilyPage() {
     if (!user) return;
     setNotifStatus("loading");
     const result = await enableNotifications(user.uid);
-    if (result === "granted") {
-      setNotifStatus("granted");
-    } else if (result === "denied") {
-      setNotifStatus("denied");
-    } else {
-      setNotifStatus("unsupported");
+    setNotifStatus(result === "granted" ? "granted" : result === "denied" ? "denied" : "unsupported");
+  }
+
+  async function handleLeave() {
+    if (!user || !familyId) return;
+    if (!confirm("家族を抜けますか？\nペットや記録は削除されません。")) return;
+    setDissolving(true);
+    try {
+      await leaveFamily(user.uid, familyId);
+      router.push("/onboarding");
+    } catch {
+      alert("エラーが発生しました。もう一度試してください。");
+      setDissolving(false);
+    }
+  }
+
+  async function handleDeleteFamily() {
+    if (!user || !familyId || !family) return;
+    const confirmed = confirm(
+      `「家族を解散」すると、すべてのペット・記録・リマインダーが完全に削除されます。\n\n本当に解散しますか？`
+    );
+    if (!confirmed) return;
+    setDissolving(true);
+    try {
+      await deleteFamily(familyId, family.memberIds);
+      router.push("/onboarding");
+    } catch {
+      alert("エラーが発生しました。もう一度試してください。");
+      setDissolving(false);
     }
   }
 
@@ -51,6 +77,7 @@ export default function FamilyPage() {
   }
 
   const members = Object.entries(family?.memberInfo ?? {});
+  const isCreator = user?.uid === family?.createdBy;
 
   return (
     <div className="max-w-lg mx-auto px-4 pt-6 pb-24">
@@ -121,7 +148,7 @@ export default function FamilyPage() {
       </section>
 
       {/* メンバー一覧 */}
-      <section className="bg-white rounded-2xl p-5 shadow-sm">
+      <section className="bg-white rounded-2xl p-5 shadow-sm mb-5">
         <p className="text-sm font-semibold text-gray-500 mb-4">
           メンバー（{members.length}人）
         </p>
@@ -147,6 +174,39 @@ export default function FamilyPage() {
             </div>
           ))}
         </div>
+      </section>
+
+      {/* 退出・解散 */}
+      <section className="bg-white rounded-2xl p-5 shadow-sm">
+        {isCreator ? (
+          <div>
+            <p className="text-sm font-semibold text-gray-500 mb-1">家族を解散する</p>
+            <p className="text-xs text-gray-400 mb-4">
+              すべてのペット・記録・リマインダーが削除されます。この操作は取り消せません。
+            </p>
+            <button
+              onClick={handleDeleteFamily}
+              disabled={dissolving}
+              className="w-full py-3 bg-red-50 hover:bg-red-100 active:scale-95 text-red-600 font-semibold rounded-xl transition-all disabled:opacity-50"
+            >
+              {dissolving ? "処理中..." : "家族を解散する"}
+            </button>
+          </div>
+        ) : (
+          <div>
+            <p className="text-sm font-semibold text-gray-500 mb-1">家族を抜ける</p>
+            <p className="text-xs text-gray-400 mb-4">
+              家族グループから退出します。ペットや記録は残ります。
+            </p>
+            <button
+              onClick={handleLeave}
+              disabled={dissolving}
+              className="w-full py-3 bg-red-50 hover:bg-red-100 active:scale-95 text-red-600 font-semibold rounded-xl transition-all disabled:opacity-50"
+            >
+              {dissolving ? "処理中..." : "家族を抜ける"}
+            </button>
+          </div>
+        )}
       </section>
     </div>
   );
