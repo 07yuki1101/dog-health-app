@@ -18,7 +18,7 @@ import {
 } from "firebase/firestore";
 import { getFirebaseDb } from "./firebase";
 import { deletePhotoByURL } from "./storage";
-import type { Dog, Reminder, HealthLog, Family, UserDoc } from "./types";
+import type { Dog, Reminder, HealthLog, Family, UserDoc, TaskDef } from "./types";
 
 const db = () => getFirebaseDb();
 
@@ -269,4 +269,93 @@ export async function deleteDog(familyId: string, dogId: string): Promise<void> 
 
   batch.delete(dogRef(familyId, dogId));
   await batch.commit();
+}
+
+// ─── Daily Tasks ──────────────────────────────────────────────
+const taskDefsRef = (familyId: string) =>
+  collection(db(), "families", familyId, "taskDefs");
+const taskDefDocRef = (familyId: string, taskId: string) =>
+  doc(db(), "families", familyId, "taskDefs", taskId);
+const dailyCompletionRef = (familyId: string, date: string) =>
+  doc(db(), "families", familyId, "dailyCompletions", date);
+
+const DEFAULT_TASKS = [
+  { label: "🍚 朝食", order: 0 },
+  { label: "🌙 夕食", order: 1 },
+  { label: "🦮 散歩", order: 2 },
+  { label: "💩 うんち", order: 3 },
+  { label: "🚽 トイレ交換", order: 4 },
+  { label: "💧 水交換", order: 5 },
+];
+
+export async function initDefaultTaskDefs(familyId: string): Promise<void> {
+  const snap = await getDocs(taskDefsRef(familyId));
+  if (!snap.empty) return;
+  await Promise.all(
+    DEFAULT_TASKS.map(({ label, order }) =>
+      addDoc(taskDefsRef(familyId), { label, order, createdAt: serverTimestamp() })
+    )
+  );
+}
+
+export function subscribeTaskDefs(
+  familyId: string,
+  cb: (tasks: TaskDef[]) => void
+): Unsubscribe {
+  return onSnapshot(
+    query(taskDefsRef(familyId), orderBy("order", "asc")),
+    (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as TaskDef)
+  ));
+}
+
+export async function addTaskDef(familyId: string, label: string): Promise<void> {
+  const snap = await getDocs(taskDefsRef(familyId));
+  const maxOrder = snap.docs.reduce(
+    (max, d) => Math.max(max, (d.data().order as number) ?? 0),
+    -1
+  );
+  await addDoc(taskDefsRef(familyId), {
+    label,
+    order: maxOrder + 1,
+    createdAt: serverTimestamp(),
+  });
+}
+
+export async function deleteTaskDef(familyId: string, taskId: string): Promise<void> {
+  await deleteDoc(taskDefDocRef(familyId, taskId));
+}
+
+export async function moveTaskDef(
+  familyId: string,
+  tasks: TaskDef[],
+  taskId: string,
+  direction: "up" | "down"
+): Promise<void> {
+  const idx = tasks.findIndex((t) => t.id === taskId);
+  if (idx === -1) return;
+  const swapIdx = direction === "up" ? idx - 1 : idx + 1;
+  if (swapIdx < 0 || swapIdx >= tasks.length) return;
+  const batch = writeBatch(db());
+  batch.update(taskDefDocRef(familyId, tasks[idx].id), { order: tasks[swapIdx].order });
+  batch.update(taskDefDocRef(familyId, tasks[swapIdx].id), { order: tasks[idx].order });
+  await batch.commit();
+}
+
+export function subscribeDailyCompletions(
+  familyId: string,
+  date: string,
+  cb: (completions: Record<string, boolean>) => void
+): Unsubscribe {
+  return onSnapshot(dailyCompletionRef(familyId, date), (snap) => {
+    cb(snap.exists() ? (snap.data() as Record<string, boolean>) : {});
+  });
+}
+
+export async function toggleCompletion(
+  familyId: string,
+  date: string,
+  taskId: string,
+  done: boolean
+): Promise<void> {
+  await setDoc(dailyCompletionRef(familyId, date), { [taskId]: done }, { merge: true });
 }

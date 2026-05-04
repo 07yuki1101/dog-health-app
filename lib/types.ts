@@ -63,6 +63,13 @@ export interface HealthLog {
   createdAt: Timestamp;
 }
 
+export interface TaskDef {
+  id: string;
+  label: string;
+  order: number;
+  createdAt: Timestamp;
+}
+
 export const REMINDER_LABELS: Record<ReminderType, string> = {
   medication: "💊 投薬",
   vaccine: "💉 ワクチン",

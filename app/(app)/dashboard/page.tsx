@@ -6,6 +6,7 @@ import { signOut } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebase";
 import { useAuth } from "@/components/AuthProvider";
 import { getDogs, getUpcomingReminders } from "@/lib/firestore";
+import { DailyTasks } from "@/components/DailyTasks";
 import type { Dog, Reminder } from "@/lib/types";
 
 export default function DashboardPage() {
@@ -40,7 +41,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="max-w-lg mx-auto px-4 pt-6">
+    <div className="max-w-lg mx-auto px-4 pt-6 pb-24">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-bold text-gray-800">
@@ -55,6 +56,8 @@ export default function DashboardPage() {
           ログアウト
         </button>
       </div>
+
+      <DailyTasks />
 
       <section className="mb-6">
         <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
