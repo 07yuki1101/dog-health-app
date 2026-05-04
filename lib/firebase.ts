@@ -42,6 +42,7 @@ export function getFirebaseStorage(): FirebaseStorage {
 }
 
 export const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({ prompt: "select_account" });
 
 export async function getFirebaseMessagingAsync(): Promise<Messaging | null> {
   if (typeof window === "undefined") return null;

@@ -54,7 +54,7 @@ export default function DashboardPage() {
           onClick={() => signOut(getFirebaseAuth())}
           className="text-xs text-gray-400 px-3 py-1 rounded-full border border-gray-200"
         >
-          ログアウト
+          アカウントを切り替える
         </button>
       </div>
 
