@@ -63,6 +63,15 @@ export interface HealthLog {
   createdAt: Timestamp;
 }
 
+export interface PeriodicCare {
+  id: string;
+  name: string;
+  cycleDays: number;
+  lastDoneDate: string;
+  notifyDaysBefore: number;
+  createdAt: Timestamp;
+}
+
 export interface TaskDef {
   id: string;
   label: string;

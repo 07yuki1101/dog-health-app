@@ -18,7 +18,7 @@ import {
 } from "firebase/firestore";
 import { getFirebaseDb } from "./firebase";
 import { deletePhotoByURL } from "./storage";
-import type { Dog, Reminder, HealthLog, Family, UserDoc, TaskDef } from "./types";
+import type { Dog, Reminder, HealthLog, Family, UserDoc, TaskDef, PeriodicCare } from "./types";
 
 const db = () => getFirebaseDb();
 
@@ -267,8 +267,68 @@ export async function deleteDog(familyId: string, dogId: string): Promise<void> 
   const reminderSnap = await getDocs(remindersRef(familyId, dogId));
   reminderSnap.docs.forEach((d) => batch.delete(d.ref));
 
+  const careSnap = await getDocs(caresRef(familyId, dogId));
+  careSnap.docs.forEach((d) => batch.delete(d.ref));
+
   batch.delete(dogRef(familyId, dogId));
   await batch.commit();
+}
+
+// ─── Periodic Cares ───────────────────────────────────────────
+const caresRef = (familyId: string, dogId: string) =>
+  collection(db(), "families", familyId, "dogs", dogId, "periodicCares");
+const careRef = (familyId: string, dogId: string, careId: string) =>
+  doc(db(), "families", familyId, "dogs", dogId, "periodicCares", careId);
+
+export function addDaysToDate(dateStr: string, days: number): string {
+  const d = new Date(dateStr + "T00:00:00Z");
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().split("T")[0];
+}
+
+export async function getPeriodicCares(familyId: string, dogId: string): Promise<PeriodicCare[]> {
+  const snap = await getDocs(query(caresRef(familyId, dogId), orderBy("createdAt", "asc")));
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as PeriodicCare);
+}
+
+export async function addPeriodicCare(
+  familyId: string,
+  dogId: string,
+  data: Omit<PeriodicCare, "id" | "createdAt">
+) {
+  return addDoc(caresRef(familyId, dogId), { ...data, createdAt: serverTimestamp() });
+}
+
+export async function deletePeriodicCare(familyId: string, dogId: string, careId: string) {
+  return deleteDoc(careRef(familyId, dogId, careId));
+}
+
+export async function markCareAsDone(familyId: string, dogId: string, careId: string): Promise<void> {
+  const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split("T")[0];
+  await updateDoc(careRef(familyId, dogId, careId), { lastDoneDate: today });
+}
+
+export async function getUpcomingPeriodicCares(
+  familyId: string,
+  dogs: Dog[]
+): Promise<{ dog: Dog; care: PeriodicCare; nextDueDate: string; daysUntil: number }[]> {
+  const todayJST = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split("T")[0];
+  const results: { dog: Dog; care: PeriodicCare; nextDueDate: string; daysUntil: number }[] = [];
+
+  for (const dog of dogs) {
+    const cares = await getPeriodicCares(familyId, dog.id);
+    for (const care of cares) {
+      const nextDueDate = addDaysToDate(care.lastDoneDate, care.cycleDays);
+      const daysUntil = Math.ceil(
+        (new Date(nextDueDate + "T00:00:00Z").getTime() - new Date(todayJST + "T00:00:00Z").getTime()) / 86400000
+      );
+      if (daysUntil <= care.notifyDaysBefore) {
+        results.push({ dog, care, nextDueDate, daysUntil });
+      }
+    }
+  }
+
+  return results.sort((a, b) => a.daysUntil - b.daysUntil);
 }
 
 // ─── Daily Tasks ──────────────────────────────────────────────

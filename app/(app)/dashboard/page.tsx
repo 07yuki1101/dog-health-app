@@ -7,6 +7,7 @@ import { getFirebaseAuth } from "@/lib/firebase";
 import { useAuth } from "@/components/AuthProvider";
 import { getDogs, getUpcomingReminders } from "@/lib/firestore";
 import { DailyTasks } from "@/components/DailyTasks";
+import { UpcomingCares } from "@/components/UpcomingCares";
 import type { Dog, Reminder } from "@/lib/types";
 
 export default function DashboardPage() {
@@ -58,6 +59,8 @@ export default function DashboardPage() {
       </div>
 
       <DailyTasks />
+
+      <UpcomingCares />
 
       <section className="mb-6">
         <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">

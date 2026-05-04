@@ -82,13 +82,20 @@ export default function DogProfilePage() {
       </div>
 
       {/* Quick actions */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
+      <div className="grid grid-cols-4 gap-3 mb-6">
         <Link
           href={`/dogs/${dogId}/reminders/new`}
           className="flex flex-col items-center bg-white rounded-2xl py-4 shadow-sm active:scale-95 transition-transform"
         >
           <span className="text-2xl mb-1">🔔</span>
           <span className="text-xs text-gray-600 font-medium">リマインド</span>
+        </Link>
+        <Link
+          href={`/dogs/${dogId}/cares`}
+          className="flex flex-col items-center bg-white rounded-2xl py-4 shadow-sm active:scale-95 transition-transform"
+        >
+          <span className="text-2xl mb-1">🛁</span>
+          <span className="text-xs text-gray-600 font-medium">定期ケア</span>
         </Link>
         <Link
           href={`/dogs/${dogId}/logs/new`}

@@ -10,9 +10,9 @@ export function BottomNav({ dogId }: { dogId?: string }) {
     ? [
         { href: "/dashboard", label: "ホーム", icon: "🏠" },
         { href: `/dogs/${dogId}`, label: "プロフィール", icon: "🐕" },
+        { href: `/dogs/${dogId}/cares`, label: "定期ケア", icon: "🛁" },
         { href: `/dogs/${dogId}/reminders`, label: "リマインド", icon: "🔔" },
         { href: `/dogs/${dogId}/logs`, label: "記録", icon: "📋" },
-        { href: "/family", label: "家族", icon: "👨‍👩‍👧" },
       ]
     : [
         { href: "/dashboard", label: "ホーム", icon: "🏠" },
