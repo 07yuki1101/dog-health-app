@@ -17,136 +17,78 @@ export default function OnboardingPage() {
     if (!user) return;
     setSubmitting(true);
     try {
-      await createFamily(
-        user.uid,
-        user.displayName ?? "ユーザー",
-        user.photoURL ?? undefined
-      );
+      await createFamily(user.uid, user.displayName ?? "ユーザー", user.photoURL ?? undefined);
       router.replace("/dashboard");
-    } catch (err) {
-      console.error(err);
-      setSubmitting(false);
-    }
+    } catch (err) { console.error(err); setSubmitting(false); }
   }
 
   async function handleJoin(e: React.FormEvent) {
     e.preventDefault();
     if (!user || inviteCode.length !== 6) return;
-    setSubmitting(true);
-    setError("");
+    setSubmitting(true); setError("");
     try {
-      const familyId = await joinFamily(
-        user.uid,
-        inviteCode,
-        user.displayName ?? "ユーザー",
-        user.photoURL ?? undefined
-      );
-      if (!familyId) {
-        setError("招待コードが見つかりません。もう一度確認してください。");
-        setSubmitting(false);
-        return;
-      }
+      const familyId = await joinFamily(user.uid, inviteCode, user.displayName ?? "ユーザー", user.photoURL ?? undefined);
+      if (!familyId) { setError("招待コードが見つかりません。もう一度確認してください。"); setSubmitting(false); return; }
       router.replace("/dashboard");
-    } catch (err) {
-      console.error(err);
-      setError("エラーが発生しました。もう一度お試しください。");
-      setSubmitting(false);
-    }
+    } catch { setError("エラーが発生しました。もう一度お試しください。"); setSubmitting(false); }
   }
 
-  if (mode === "select") {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-amber-50 px-6">
-        <div className="text-center mb-10">
-          <div className="text-6xl mb-4">🐾</div>
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">ようこそ！</h1>
-          <p className="text-sm text-gray-500 leading-relaxed">
-            家族を作るか、招待コードで参加しましょう
-          </p>
-        </div>
-
-        <div className="w-full max-w-sm space-y-3">
-          <button
-            onClick={() => setMode("create")}
-            className="w-full bg-amber-500 text-white font-bold py-4 rounded-2xl shadow-sm active:scale-95 transition-transform"
-          >
-            🏠 家族を新しく作る
-          </button>
-          <button
-            onClick={() => setMode("join")}
-            className="w-full bg-white border-2 border-amber-300 text-amber-700 font-bold py-4 rounded-2xl active:scale-95 transition-transform"
-          >
-            🔑 招待コードで参加する
-          </button>
-        </div>
+  if (mode === "select") return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-amber-50 px-6 relative overflow-hidden">
+      <div className="absolute top-12 left-6 text-5xl opacity-10 rotate-[-15deg] select-none">🐾</div>
+      <div className="absolute bottom-20 right-8 text-4xl opacity-10 rotate-[10deg] select-none">🐾</div>
+      <div className="text-center mb-10">
+        <div className="text-6xl mb-4">🐾</div>
+        <h1 className="text-2xl font-black text-gray-800 mb-2">ようこそ！</h1>
+        <p className="text-sm text-gray-500 leading-relaxed">家族を作るか、招待コードで参加しましょう</p>
       </div>
-    );
-  }
-
-  if (mode === "create") {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-amber-50 px-6">
-        <div className="text-center mb-8">
-          <div className="text-5xl mb-4">🏠</div>
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">家族を作る</h1>
-          <p className="text-sm text-gray-500">
-            招待コードが発行されます
-            <br />
-            家族に共有して一緒に管理できます
-          </p>
-        </div>
-
-        <div className="w-full max-w-sm space-y-3">
-          <button
-            onClick={handleCreate}
-            disabled={submitting}
-            className="w-full bg-amber-500 text-white font-bold py-4 rounded-2xl shadow-sm disabled:opacity-50 active:scale-95 transition-transform"
-          >
-            {submitting ? "作成中..." : "家族を作成する"}
-          </button>
-          <button
-            onClick={() => setMode("select")}
-            className="w-full text-gray-400 py-2 text-sm"
-          >
-            戻る
-          </button>
-        </div>
+      <div className="w-full max-w-sm space-y-3">
+        <button onClick={() => setMode("create")}
+          className="w-full bg-amber-500 text-white font-black py-4 rounded-2xl shadow-md active:scale-95 transition-transform text-base">
+          🏠 家族を新しく作る
+        </button>
+        <button onClick={() => setMode("join")}
+          className="w-full bg-white border-2 border-amber-300 text-amber-600 font-black py-4 rounded-2xl active:scale-95 transition-transform text-base">
+          🔑 招待コードで参加する
+        </button>
       </div>
-    );
-  }
+    </div>
+  );
+
+  if (mode === "create") return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-amber-50 px-6">
+      <div className="text-center mb-8">
+        <div className="w-20 h-20 bg-amber-100 rounded-3xl flex items-center justify-center text-4xl mx-auto mb-4">🏠</div>
+        <h1 className="text-2xl font-black text-gray-800 mb-2">家族を作る</h1>
+        <p className="text-sm text-gray-500">招待コードが発行されます<br />家族に共有して一緒に管理できます</p>
+      </div>
+      <div className="w-full max-w-sm space-y-3">
+        <button onClick={handleCreate} disabled={submitting}
+          className="w-full bg-amber-500 text-white font-black py-4 rounded-2xl shadow-md disabled:opacity-50 active:scale-95 transition-transform">
+          {submitting ? "作成中..." : "家族を作成する"}
+        </button>
+        <button onClick={() => setMode("select")} className="w-full text-gray-400 py-2 text-sm font-medium">← 戻る</button>
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-amber-50 px-6">
       <div className="text-center mb-8">
-        <div className="text-5xl mb-4">🔑</div>
-        <h1 className="text-2xl font-bold text-gray-800 mb-2">招待コードで参加</h1>
+        <div className="w-20 h-20 bg-amber-100 rounded-3xl flex items-center justify-center text-4xl mx-auto mb-4">🔑</div>
+        <h1 className="text-2xl font-black text-gray-800 mb-2">招待コードで参加</h1>
         <p className="text-sm text-gray-500">家族から共有された6桁のコードを入力</p>
       </div>
-
       <form onSubmit={handleJoin} className="w-full max-w-sm space-y-4">
-        <input
-          type="text"
-          value={inviteCode}
-          onChange={(e) => setInviteCode(e.target.value.toUpperCase().slice(0, 6))}
-          placeholder="例：ABC123"
-          maxLength={6}
-          className="w-full bg-white border-2 border-gray-200 rounded-2xl px-4 py-4 text-center text-2xl font-bold tracking-widest text-gray-800 focus:outline-none focus:border-amber-400 uppercase"
-        />
-        {error && <p className="text-red-500 text-sm text-center">{error}</p>}
-        <button
-          type="submit"
-          disabled={submitting || inviteCode.length !== 6}
-          className="w-full bg-amber-500 text-white font-bold py-4 rounded-2xl shadow-sm disabled:opacity-50 active:scale-95 transition-transform"
-        >
+        <input type="text" value={inviteCode} onChange={(e) => setInviteCode(e.target.value.toUpperCase().slice(0, 6))}
+          placeholder="例：ABC123" maxLength={6}
+          className="w-full bg-white border-2 border-gray-200 rounded-2xl px-4 py-4 text-center text-3xl font-black tracking-widest text-amber-600 focus:outline-none focus:border-amber-400 uppercase" />
+        {error && <p className="text-red-500 text-sm text-center font-medium">{error}</p>}
+        <button type="submit" disabled={submitting || inviteCode.length !== 6}
+          className="w-full bg-amber-500 text-white font-black py-4 rounded-2xl shadow-md disabled:opacity-50 active:scale-95 transition-transform">
           {submitting ? "参加中..." : "参加する"}
         </button>
-        <button
-          type="button"
-          onClick={() => setMode("select")}
-          className="w-full text-gray-400 py-2 text-sm"
-        >
-          戻る
-        </button>
+        <button type="button" onClick={() => setMode("select")} className="w-full text-gray-400 py-2 text-sm font-medium">← 戻る</button>
       </form>
     </div>
   );

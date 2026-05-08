@@ -79,6 +79,32 @@ export interface TaskDef {
   createdAt: Timestamp;
 }
 
+export type MealAmountEaten = "完食" | "半分" | "少し" | "食べてない";
+export type MealLabel = "朝" | "昼" | "夜";
+export type PoopCondition = "良い" | "少しゆるい" | "下痢" | "出てない";
+export type PeeCondition = "普通" | "少ない" | "多い";
+
+export interface MealEntry {
+  label: MealLabel;
+  foodType: string;
+  amount: string;
+  amountEaten: MealAmountEaten | "";
+}
+
+export interface DailyHealthCheck {
+  meals: MealEntry[];
+  poop: {
+    condition: PoopCondition | "";
+    memo: string;
+  };
+  pee: {
+    condition: PeeCondition | "";
+  };
+  energy: number;
+  memo: string;
+  updatedAt?: Timestamp;
+}
+
 export const REMINDER_LABELS: Record<ReminderType, string> = {
   medication: "💊 投薬",
   vaccine: "💉 ワクチン",

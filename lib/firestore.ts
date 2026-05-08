@@ -18,7 +18,7 @@ import {
 } from "firebase/firestore";
 import { getFirebaseDb } from "./firebase";
 import { deletePhotoByURL } from "./storage";
-import type { Dog, Reminder, HealthLog, Family, UserDoc, TaskDef, PeriodicCare } from "./types";
+import type { Dog, Reminder, HealthLog, Family, UserDoc, TaskDef, PeriodicCare, DailyHealthCheck } from "./types";
 
 const db = () => getFirebaseDb();
 
@@ -308,6 +308,25 @@ export async function markCareAsDone(familyId: string, dogId: string, careId: st
   await updateDoc(careRef(familyId, dogId, careId), { lastDoneDate: today });
 }
 
+export async function getAllDogsPeriodicCares(
+  familyId: string,
+  dogs: Dog[]
+): Promise<{ dog: Dog; care: PeriodicCare; nextDueDate: string; daysUntil: number }[]> {
+  const todayJST = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split("T")[0];
+  const results: { dog: Dog; care: PeriodicCare; nextDueDate: string; daysUntil: number }[] = [];
+  for (const dog of dogs) {
+    const cares = await getPeriodicCares(familyId, dog.id);
+    for (const care of cares) {
+      const nextDueDate = addDaysToDate(care.lastDoneDate, care.cycleDays);
+      const daysUntil = Math.ceil(
+        (new Date(nextDueDate + "T00:00:00Z").getTime() - new Date(todayJST + "T00:00:00Z").getTime()) / 86400000
+      );
+      results.push({ dog, care, nextDueDate, daysUntil });
+    }
+  }
+  return results.sort((a, b) => a.daysUntil - b.daysUntil);
+}
+
 export async function getUpcomingPeriodicCares(
   familyId: string,
   dogs: Dog[]
@@ -418,4 +437,39 @@ export async function toggleCompletion(
   done: boolean
 ): Promise<void> {
   await setDoc(dailyCompletionRef(familyId, date), { [taskId]: done }, { merge: true });
+}
+
+// ─── Daily Health Check ───────────────────────────────────────
+const dailyHealthCheckRef = (familyId: string, dogId: string, date: string) =>
+  doc(db(), "families", familyId, "dogs", dogId, "dailyHealthChecks", date);
+
+export async function getDailyHealthCheck(
+  familyId: string,
+  dogId: string,
+  date: string
+): Promise<DailyHealthCheck | null> {
+  const snap = await getDoc(dailyHealthCheckRef(familyId, dogId, date));
+  return snap.exists() ? (snap.data() as DailyHealthCheck) : null;
+}
+
+export async function getDailyHealthChecks(
+  familyId: string,
+  dogId: string
+): Promise<(DailyHealthCheck & { date: string })[]> {
+  const ref = collection(db(), "families", familyId, "dogs", dogId, "dailyHealthChecks");
+  const snap = await getDocs(query(ref, orderBy("updatedAt", "desc")));
+  return snap.docs.map((d) => ({ date: d.id, ...(d.data() as DailyHealthCheck) }));
+}
+
+export async function saveDailyHealthCheck(
+  familyId: string,
+  dogId: string,
+  date: string,
+  data: Omit<DailyHealthCheck, "updatedAt">
+): Promise<void> {
+  await setDoc(
+    dailyHealthCheckRef(familyId, dogId, date),
+    { ...data, updatedAt: serverTimestamp() },
+    { merge: true }
+  );
 }
