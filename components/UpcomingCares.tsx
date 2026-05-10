@@ -77,7 +77,12 @@ export function UpcomingCares() {
       ) : (
         <div className="space-y-2">
           {items.map(({ dog, care, daysUntil }) => {
-            const { text, color } = urgencyStyle(daysUntil);
+            const todayStr = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split("T")[0];
+            const scheduledDays = care.scheduledAt
+              ? Math.ceil((new Date(care.scheduledAt.split("T")[0] + "T00:00:00Z").getTime() - new Date(todayStr + "T00:00:00Z").getTime()) / 86400000)
+              : null;
+            const displayDays = scheduledDays !== null ? scheduledDays : daysUntil;
+            const { text, color } = urgencyStyle(displayDays);
             const isDoing = doingId === care.id;
             return (
               <div key={care.id} className="flex items-center gap-3 bg-white rounded-2xl px-4 py-3 shadow-sm">

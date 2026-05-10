@@ -151,8 +151,12 @@ export default function CaresPage() {
           <div className="space-y-3">
             {cares.map((care) => {
               const nextDueDate = addDaysToDate(care.lastDoneDate, care.cycleDays);
-              const daysUntil = Math.ceil((new Date(nextDueDate + "T00:00:00Z").getTime() - new Date(today + "T00:00:00Z").getTime()) / 86400000);
-              const { label, color, bg } = urgencyStyle(daysUntil);
+              const cycleDaysUntil = Math.ceil((new Date(nextDueDate + "T00:00:00Z").getTime() - new Date(today + "T00:00:00Z").getTime()) / 86400000);
+              const scheduledDaysUntil = care.scheduledAt
+                ? Math.ceil((new Date(care.scheduledAt.split("T")[0] + "T00:00:00Z").getTime() - new Date(today + "T00:00:00Z").getTime()) / 86400000)
+                : null;
+              const displayDays = scheduledDaysUntil !== null ? scheduledDaysUntil : cycleDaysUntil;
+              const { label, color, bg } = urgencyStyle(displayDays);
               const isDoing = doingId === care.id;
               return (
                 <div key={care.id} className="bg-white rounded-2xl p-4 shadow-sm">
@@ -161,15 +165,16 @@ export default function CaresPage() {
                       <div>
                         <p className="font-black text-gray-800">{care.name}</p>
                         <div className="flex items-center gap-2 mt-0.5">
-                          <p className="text-xs text-gray-400">{care.cycleDays}日ごと</p>
-                          {care.scheduledAt && (
-                            <span className="text-xs bg-orange-100 text-orange-600 font-bold px-1.5 py-0.5 rounded-full">📅 {formatScheduled(care.scheduledAt)}</span>
+                          {care.scheduledAt ? (
+                            <span className="text-xs text-orange-500 font-bold">📅 {formatScheduled(care.scheduledAt)}</span>
+                          ) : (
+                            <p className="text-xs text-gray-400">{care.cycleDays}日ごと · 次回 {nextDueDate}</p>
                           )}
                         </div>
                       </div>
                       <div className="text-right flex-shrink-0">
                         <span className={`text-xs px-2 py-1 rounded-full font-black ${color} ${bg}`}>{label}</span>
-                        <p className="text-xs text-gray-400 mt-1">次回 {nextDueDate}</p>
+                        {care.scheduledAt && <p className="text-xs text-gray-400 mt-1">周期 {nextDueDate}</p>}
                       </div>
                     </div>
                   </Link>
