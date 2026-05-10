@@ -69,6 +69,7 @@ export interface PeriodicCare {
   cycleDays: number;
   lastDoneDate: string;
   notifyDaysBefore: number;
+  scheduledAt?: string;
   createdAt: Timestamp;
 }
 

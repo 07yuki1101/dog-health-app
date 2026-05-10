@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { getDog, getPeriodicCares, addPeriodicCare, deletePeriodicCare, markCareAsDone, addDaysToDate } from "@/lib/firestore";
@@ -18,6 +19,12 @@ const PRESETS = [
 
 function getTodayJST() {
   return new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split("T")[0];
+}
+
+function formatScheduled(s: string) {
+  const [datePart, timePart] = s.split("T");
+  const [, month, day] = datePart.split("-");
+  return timePart ? `${parseInt(month)}/${parseInt(day)} ${timePart}` : `${parseInt(month)}/${parseInt(day)}`;
 }
 
 function urgencyStyle(daysUntil: number) {
@@ -149,16 +156,23 @@ export default function CaresPage() {
               const isDoing = doingId === care.id;
               return (
                 <div key={care.id} className="bg-white rounded-2xl p-4 shadow-sm">
-                  <div className="flex items-start justify-between gap-2 mb-3">
-                    <div>
-                      <p className="font-black text-gray-800">{care.name}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">{care.cycleDays}日ごと</p>
+                  <Link href={`/dogs/${dogId}/cares/${care.id}`} className="block mb-3 active:opacity-70">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="font-black text-gray-800">{care.name}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <p className="text-xs text-gray-400">{care.cycleDays}日ごと</p>
+                          {care.scheduledAt && (
+                            <span className="text-xs bg-orange-100 text-orange-600 font-bold px-1.5 py-0.5 rounded-full">📅 {formatScheduled(care.scheduledAt)}</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <span className={`text-xs px-2 py-1 rounded-full font-black ${color} ${bg}`}>{label}</span>
+                        <p className="text-xs text-gray-400 mt-1">次回 {nextDueDate}</p>
+                      </div>
                     </div>
-                    <div className="text-right flex-shrink-0">
-                      <span className={`text-xs px-2 py-1 rounded-full font-black ${color} ${bg}`}>{label}</span>
-                      <p className="text-xs text-gray-400 mt-1">次回 {nextDueDate}</p>
-                    </div>
-                  </div>
+                  </Link>
                   <div className="flex items-center justify-between text-xs text-gray-400">
                     <span>前回 {care.lastDoneDate}</span>
                     <div className="flex gap-2">

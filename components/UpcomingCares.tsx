@@ -13,6 +13,12 @@ type CareItem = {
   daysUntil: number;
 };
 
+function formatScheduled(s: string) {
+  const [datePart, timePart] = s.split("T");
+  const [, month, day] = datePart.split("-");
+  return timePart ? `${parseInt(month)}/${parseInt(day)} ${timePart}` : `${parseInt(month)}/${parseInt(day)}`;
+}
+
 function urgencyStyle(daysUntil: number) {
   if (daysUntil < 0) return { text: `${Math.abs(daysUntil)}日超過`, color: "text-red-500 font-bold" };
   if (daysUntil === 0) return { text: "今日", color: "text-red-500 font-bold" };
@@ -74,20 +80,23 @@ export function UpcomingCares() {
             const { text, color } = urgencyStyle(daysUntil);
             const isDoing = doingId === care.id;
             return (
-              <div
-                key={care.id}
-                className="flex items-center gap-3 bg-white rounded-2xl px-4 py-3 shadow-sm"
-              >
-                <div className="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center text-lg overflow-hidden flex-shrink-0">
-                  {dog.photoURL ? (
-                    <img src={dog.photoURL} alt={dog.name} className="w-full h-full object-cover" />
-                  ) : "🐕"}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-gray-800 text-sm truncate">{care.name}</p>
-                  <p className="text-xs text-gray-400">{dog.name} · {care.cycleDays}日ごと</p>
-                </div>
-                <span className={`text-sm flex-shrink-0 ${color}`}>{text}</span>
+              <div key={care.id} className="flex items-center gap-3 bg-white rounded-2xl px-4 py-3 shadow-sm">
+                <Link href={`/dogs/${dog.id}/cares/${care.id}`} className="flex items-center gap-3 flex-1 min-w-0 active:opacity-70">
+                  <div className="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center text-lg overflow-hidden flex-shrink-0">
+                    {dog.photoURL ? (
+                      <img src={dog.photoURL} alt={dog.name} className="w-full h-full object-cover" />
+                    ) : "🐕"}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-gray-800 text-sm truncate">{care.name}</p>
+                    {care.scheduledAt ? (
+                      <p className="text-xs text-orange-500 font-bold">📅 {formatScheduled(care.scheduledAt)}</p>
+                    ) : (
+                      <p className="text-xs text-gray-400">{dog.name} · {care.cycleDays}日ごと</p>
+                    )}
+                  </div>
+                  <span className={`text-sm flex-shrink-0 ${color}`}>{text}</span>
+                </Link>
                 <button
                   onClick={() => handleDone(dog, care)}
                   disabled={isDoing}

@@ -299,13 +299,22 @@ export async function addPeriodicCare(
   return addDoc(caresRef(familyId, dogId), { ...data, createdAt: serverTimestamp() });
 }
 
+export async function getPeriodicCare(familyId: string, dogId: string, careId: string): Promise<PeriodicCare | null> {
+  const snap = await getDoc(careRef(familyId, dogId, careId));
+  return snap.exists() ? ({ id: snap.id, ...snap.data() } as PeriodicCare) : null;
+}
+
 export async function deletePeriodicCare(familyId: string, dogId: string, careId: string) {
   return deleteDoc(careRef(familyId, dogId, careId));
 }
 
+export async function updateCareScheduledAt(familyId: string, dogId: string, careId: string, scheduledAt: string | null): Promise<void> {
+  await updateDoc(careRef(familyId, dogId, careId), scheduledAt ? { scheduledAt } : { scheduledAt: deleteField() });
+}
+
 export async function markCareAsDone(familyId: string, dogId: string, careId: string): Promise<void> {
   const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split("T")[0];
-  await updateDoc(careRef(familyId, dogId, careId), { lastDoneDate: today });
+  await updateDoc(careRef(familyId, dogId, careId), { lastDoneDate: today, scheduledAt: deleteField() });
 }
 
 export async function getAllDogsPeriodicCares(
