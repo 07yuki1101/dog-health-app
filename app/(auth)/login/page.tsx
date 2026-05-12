@@ -2,26 +2,47 @@
 
 export const dynamic = "force-dynamic";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { signInWithPopup } from "firebase/auth";
+import { signInWithRedirect, getRedirectResult } from "firebase/auth";
 import { getFirebaseAuth, googleProvider } from "@/lib/firebase";
 import { useAuth } from "@/components/AuthProvider";
 
 export default function LoginPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const [redirectChecking, setRedirectChecking] = useState(true);
+  const [signingIn, setSigningIn] = useState(false);
 
   useEffect(() => {
     if (!loading && user) router.replace("/dashboard");
   }, [user, loading, router]);
 
+  // リダイレクト後に戻ってきたときの結果を取得
+  useEffect(() => {
+    getRedirectResult(getFirebaseAuth())
+      .catch((error) => console.error("ログインエラー", error))
+      .finally(() => setRedirectChecking(false));
+  }, []);
+
   async function handleGoogleLogin() {
+    setSigningIn(true);
     try {
-      await signInWithPopup(getFirebaseAuth(), googleProvider);
+      await signInWithRedirect(getFirebaseAuth(), googleProvider);
     } catch (err) {
       console.error(err);
+      setSigningIn(false);
     }
+  }
+
+  // リダイレクト確認中 / Auth初期化中 / リダイレクト移動中
+  if (redirectChecking || loading || signingIn) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-amber-50">
+        <div className="text-5xl animate-pulse mb-4">🐾</div>
+        <p className="text-gray-400 text-sm font-medium">ログイン中...</p>
+      </div>
+    );
   }
 
   return (
