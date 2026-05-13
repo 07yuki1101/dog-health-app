@@ -27,14 +27,13 @@ export default function LoginPage() {
     setError("");
     try {
       if (isNativeApp()) {
-        // ネイティブ iOS: @codetrix-studio/capacitor-google-auth で Google Sign-In
-        const { GoogleAuth } = await import("@codetrix-studio/capacitor-google-auth");
-        await GoogleAuth.initialize();
-        const googleUser = await GoogleAuth.signIn();
-        const idToken = googleUser.authentication.idToken;
+        // ネイティブ iOS: @capacitor-firebase/authentication で Google Sign-In
+        const { FirebaseAuthentication } = await import("@capacitor-firebase/authentication");
+        const result = await FirebaseAuthentication.signInWithGoogle();
+        const idToken = result.credential?.idToken;
+        if (!idToken) throw new Error("Google Sign-In: idToken が取得できませんでした");
         const credential = GoogleAuthProvider.credential(idToken);
         await signInWithCredential(getFirebaseAuth(), credential);
-        // onAuthStateChanged が発火して AuthProvider がユーザーを反映する
       } else {
         // Web ブラウザ: 通常の redirect フロー
         await signInWithRedirect(getFirebaseAuth(), googleProvider);
