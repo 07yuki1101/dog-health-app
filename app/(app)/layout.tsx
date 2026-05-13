@@ -37,7 +37,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const showNav = pathname !== "/onboarding";
 
   return (
-    <div className={showNav ? "min-h-screen pb-20" : "min-h-screen"}>
+    <div className={`safe-area-pt ${showNav ? "min-h-screen pb-20" : "min-h-screen"}`}>
       {children}
       {showNav && <BottomNav dogId={dogId ?? undefined} />}
     </div>

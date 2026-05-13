@@ -56,7 +56,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-amber-50 px-6 overflow-hidden relative">
+    <div className="safe-area-pt min-h-screen flex flex-col items-center justify-center bg-amber-50 px-6 overflow-hidden relative">
       <div className="absolute top-10 left-6 text-6xl opacity-10 rotate-[-20deg] select-none">🐾</div>
       <div className="absolute top-32 right-4 text-4xl opacity-10 rotate-[15deg] select-none">🐾</div>
       <div className="absolute bottom-32 left-10 text-5xl opacity-10 rotate-[10deg] select-none">🐾</div>
