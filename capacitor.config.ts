@@ -10,12 +10,9 @@ const config: CapacitorConfig = {
   },
 
   plugins: {
-    GoogleAuth: {
-      scopes: ['profile', 'email'],
-      // Firebase Console → Authentication → Sign-in method → Google →
-      // 「ウェブSDK設定」→「ウェブクライアントID」をここに貼る
-      serverClientId: '665471268961-9rphq2qhms1crol5jb0hqijceibng7nt.apps.googleusercontent.com',
-      forceCodeForRefreshToken: true,
+    FirebaseAuthentication: {
+      skipNativeAuth: false,
+      providers: ['google.com'],
     },
   },
 };
