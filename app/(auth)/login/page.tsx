@@ -4,39 +4,50 @@ export const dynamic = "force-dynamic";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { signInWithRedirect, getRedirectResult } from "firebase/auth";
+import { signInWithRedirect, signInWithCredential, GoogleAuthProvider } from "firebase/auth";
 import { getFirebaseAuth, googleProvider } from "@/lib/firebase";
 import { useAuth } from "@/components/AuthProvider";
+
+function isNativeApp() {
+  return typeof window !== "undefined" && !!(window as Window & { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.();
+}
 
 export default function LoginPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const [redirectChecking, setRedirectChecking] = useState(true);
   const [signingIn, setSigningIn] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (!loading && user) router.replace("/dashboard");
   }, [user, loading, router]);
 
-  // リダイレクト後に戻ってきたときの結果を取得
-  useEffect(() => {
-    getRedirectResult(getFirebaseAuth())
-      .catch((error) => console.error("ログインエラー", error))
-      .finally(() => setRedirectChecking(false));
-  }, []);
-
   async function handleGoogleLogin() {
     setSigningIn(true);
+    setError("");
     try {
-      await signInWithRedirect(getFirebaseAuth(), googleProvider);
-    } catch (err) {
-      console.error(err);
+      if (isNativeApp()) {
+        // ネイティブ iOS: @codetrix-studio/capacitor-google-auth で Google Sign-In
+        const { GoogleAuth } = await import("@codetrix-studio/capacitor-google-auth");
+        await GoogleAuth.initialize();
+        const googleUser = await GoogleAuth.signIn();
+        const idToken = googleUser.authentication.idToken;
+        const credential = GoogleAuthProvider.credential(idToken);
+        await signInWithCredential(getFirebaseAuth(), credential);
+        // onAuthStateChanged が発火して AuthProvider がユーザーを反映する
+      } else {
+        // Web ブラウザ: 通常の redirect フロー
+        await signInWithRedirect(getFirebaseAuth(), googleProvider);
+      }
+    } catch (err: unknown) {
+      const e = err as { code?: string; message?: string };
+      console.error("[Login] error:", e.code, e.message, err);
+      setError(e.code ?? e.message ?? "ログインに失敗しました");
       setSigningIn(false);
     }
   }
 
-  // リダイレクト確認中 / Auth初期化中 / リダイレクト移動中
-  if (redirectChecking || loading || signingIn) {
+  if (loading || signingIn) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-amber-50">
         <div className="text-5xl animate-pulse mb-4">🐾</div>
@@ -47,7 +58,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-amber-50 px-6 overflow-hidden relative">
-      {/* 背景の肉球装飾 */}
       <div className="absolute top-10 left-6 text-6xl opacity-10 rotate-[-20deg] select-none">🐾</div>
       <div className="absolute top-32 right-4 text-4xl opacity-10 rotate-[15deg] select-none">🐾</div>
       <div className="absolute bottom-32 left-10 text-5xl opacity-10 rotate-[10deg] select-none">🐾</div>
@@ -76,6 +86,12 @@ export default function LoginPage() {
           </svg>
           Googleでログイン
         </button>
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-2xl px-4 py-3 text-center">
+            <p className="text-red-500 text-sm font-medium">{error}</p>
+          </div>
+        )}
       </div>
 
       <p className="mt-8 text-xs text-gray-400 text-center">
