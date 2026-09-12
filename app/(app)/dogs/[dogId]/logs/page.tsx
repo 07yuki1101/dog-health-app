@@ -29,10 +29,12 @@ type FilterType = LogType | "all" | "health_check";
 function HealthCheckCard({ check }: { check: DailyHealthCheck & { date: string } }) {
   const [open, setOpen] = useState(false);
   const summary: string[] = [];
-  if (check.meals?.some((m) => m.amountEaten)) check.meals.filter((m) => m.amountEaten).forEach((m) => summary.push(`🍚${m.label} ${m.amountEaten}`));
-  if (check.poop.condition) summary.push(`💩 ${check.poop.condition}`);
-  if (check.pee.condition) summary.push(`💧 ${check.pee.condition}`);
   if (check.energy > 0) summary.push(`⚡ 元気度${check.energy}`);
+  if (check.appetite) summary.push(`🍚 ${check.appetite}`);
+  if (check.elimination) summary.push(`💩 排泄${check.elimination}`);
+  if (check.meals?.some((m) => m.amountEaten)) check.meals.filter((m) => m.amountEaten).forEach((m) => summary.push(`🍚${m.label} ${m.amountEaten}`));
+  if (check.poop?.condition) summary.push(`💩 ${check.poop.condition}`);
+  if (check.pee?.condition) summary.push(`💧 ${check.pee.condition}`);
 
   return (
     <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
@@ -48,29 +50,6 @@ function HealthCheckCard({ check }: { check: DailyHealthCheck & { date: string }
       </button>
       {open && (
         <div className="px-4 pb-4 space-y-3 border-t border-gray-50 pt-3">
-          {(check.meals ?? []).map((meal) => (
-            <div key={meal.label}>
-              <p className="text-xs font-black text-gray-400 mb-1">🍚 ご飯（{meal.label}）</p>
-              <div className="text-sm text-gray-700 space-y-0.5">
-                {meal.foodType && <p>フード：{meal.foodType}</p>}
-                {meal.amount && <p>量：{meal.amount}g</p>}
-                {meal.amountEaten && <p>食べた量：{meal.amountEaten}</p>}
-                {!meal.foodType && !meal.amount && !meal.amountEaten && <p className="text-gray-400">記録なし</p>}
-              </div>
-            </div>
-          ))}
-          <div>
-            <p className="text-xs font-black text-gray-400 mb-1">💩 うんち</p>
-            <div className="text-sm text-gray-700 space-y-0.5">
-              {check.poop.condition && <p>状態：{check.poop.condition}</p>}
-              {check.poop.memo && <p>メモ：{check.poop.memo}</p>}
-              {!check.poop.condition && !check.poop.memo && <p className="text-gray-400">記録なし</p>}
-            </div>
-          </div>
-          <div>
-            <p className="text-xs font-black text-gray-400 mb-1">💧 おしっこ</p>
-            <p className="text-sm text-gray-700">{check.pee.condition || <span className="text-gray-400">記録なし</span>}</p>
-          </div>
           <div>
             <p className="text-xs font-black text-gray-400 mb-1">⚡ 元気度</p>
             {check.energy > 0 ? (
@@ -81,6 +60,45 @@ function HealthCheckCard({ check }: { check: DailyHealthCheck & { date: string }
               </div>
             ) : <p className="text-sm text-gray-400">記録なし</p>}
           </div>
+          <div>
+            <p className="text-xs font-black text-gray-400 mb-1">🍚 食欲</p>
+            <p className="text-sm text-gray-700">{check.appetite || <span className="text-gray-400">記録なし</span>}</p>
+          </div>
+          <div>
+            <p className="text-xs font-black text-gray-400 mb-1">💩 排泄</p>
+            <p className="text-sm text-gray-700">{check.elimination || <span className="text-gray-400">記録なし</span>}</p>
+          </div>
+          {/* 旧フォーマット（詳細版）のデータが残っている場合のみ表示 */}
+          {(check.meals?.length || check.poop?.condition || check.poop?.memo || check.pee?.condition) ? (
+            <>
+              {(check.meals ?? []).map((meal) => (
+                <div key={meal.label}>
+                  <p className="text-xs font-black text-gray-400 mb-1">🍚 ご飯（{meal.label}）</p>
+                  <div className="text-sm text-gray-700 space-y-0.5">
+                    {meal.foodType && <p>フード：{meal.foodType}</p>}
+                    {meal.amount && <p>量：{meal.amount}g</p>}
+                    {meal.amountEaten && <p>食べた量：{meal.amountEaten}</p>}
+                    {!meal.foodType && !meal.amount && !meal.amountEaten && <p className="text-gray-400">記録なし</p>}
+                  </div>
+                </div>
+              ))}
+              {(check.poop?.condition || check.poop?.memo) && (
+                <div>
+                  <p className="text-xs font-black text-gray-400 mb-1">💩 うんち（旧記録）</p>
+                  <div className="text-sm text-gray-700 space-y-0.5">
+                    {check.poop?.condition && <p>状態：{check.poop.condition}</p>}
+                    {check.poop?.memo && <p>メモ：{check.poop.memo}</p>}
+                  </div>
+                </div>
+              )}
+              {check.pee?.condition && (
+                <div>
+                  <p className="text-xs font-black text-gray-400 mb-1">💧 おしっこ（旧記録）</p>
+                  <p className="text-sm text-gray-700">{check.pee.condition}</p>
+                </div>
+              )}
+            </>
+          ) : null}
           {check.memo && (
             <div>
               <p className="text-xs font-black text-gray-400 mb-1">📝 メモ</p>

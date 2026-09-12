@@ -86,6 +86,23 @@ export default function DogProfilePage() {
         </div>
       </div>
 
+      {/* ── 通院サマリーへの入口 ── */}
+      <div className="px-4 mb-4">
+        <Link
+          href={`/dogs/${dogId}/summary`}
+          className="flex items-center justify-between bg-gradient-to-r from-sky-500 to-violet-500 rounded-2xl px-5 py-4 shadow-sm active:scale-98 transition-transform"
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">🏥</span>
+            <div>
+              <p className="text-white font-black text-sm">通院サマリー</p>
+              <p className="text-white/80 text-xs">体調・体重・投薬をまとめて確認</p>
+            </div>
+          </div>
+          <span className="text-white/80 text-lg">›</span>
+        </Link>
+      </div>
+
       {/* ── クイックアクション ── */}
       <div className="px-4 mb-5">
         <div className="grid grid-cols-4 gap-2">
@@ -157,7 +174,9 @@ export default function DogProfilePage() {
                     </div>
                     <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
                       <span className="text-xs text-gray-500">元気度 {"⭐".repeat(latestHealthCheck.energy)}</span>
-                      {latestHealthCheck.poop.condition && <span className="text-xs text-gray-500">うんち: {latestHealthCheck.poop.condition}</span>}
+                      {latestHealthCheck.appetite && <span className="text-xs text-gray-500">食欲: {latestHealthCheck.appetite}</span>}
+                      {latestHealthCheck.elimination && <span className="text-xs text-gray-500">排泄: {latestHealthCheck.elimination}</span>}
+                      {latestHealthCheck.poop?.condition && <span className="text-xs text-gray-500">うんち: {latestHealthCheck.poop.condition}</span>}
                       {latestHealthCheck.memo && <span className="text-xs text-gray-400 truncate">{latestHealthCheck.memo}</span>}
                     </div>
                   </div>

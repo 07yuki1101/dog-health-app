@@ -84,6 +84,8 @@ export type MealAmountEaten = "完食" | "半分" | "少し" | "食べてない"
 export type MealLabel = "朝" | "昼" | "夜";
 export type PoopCondition = "良い" | "少しゆるい" | "下痢" | "出てない";
 export type PeeCondition = "普通" | "少ない" | "多い";
+// 排泄（3タップ版・簡易）: 詳細な状態ではなく「あった/なかった」だけを聞く
+export type EliminationStatus = "あり" | "なし";
 
 export interface MealEntry {
   label: MealLabel;
@@ -93,16 +95,22 @@ export interface MealEntry {
 }
 
 export interface DailyHealthCheck {
-  meals: MealEntry[];
-  poop: {
+  // ── 3タップ版（新）: 元気度・食欲・排泄をワンタップ選択 ──
+  energy: number; // 1〜5（アイコン選択）
+  appetite?: MealAmountEaten | ""; // 食欲（完食/半分/少し/食べてない）
+  elimination?: EliminationStatus | ""; // 排泄（あり/なし）
+  memo?: string; // メモ（任意・デフォルト非表示）
+
+  // ── 旧フォーマット（詳細版）。後方互換のため残すが新しい記録では使用しない ──
+  meals?: MealEntry[];
+  poop?: {
     condition: PoopCondition | "";
     memo: string;
   };
-  pee: {
+  pee?: {
     condition: PeeCondition | "";
   };
-  energy: number;
-  memo: string;
+
   updatedAt?: Timestamp;
 }
 
