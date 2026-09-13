@@ -6,6 +6,9 @@ import { useParams } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { getLogs, deleteLog, getDailyHealthChecks } from "@/lib/firestore";
 import type { HealthLog, LogType, DailyHealthCheck } from "@/lib/types";
+import { BackButton } from "@/components/ui/BackButton";
+import { Card } from "@/components/ui/Card";
+import { Chip } from "@/components/ui/Chip";
 
 const LOG_ICON: Record<LogType, string> = { weight: "⚖️", note: "📝", medication: "💊", vaccine: "💉", vet_visit: "🏥", photo: "📷" };
 const LOG_LABEL: Record<LogType, string> = { weight: "体重", note: "メモ", medication: "投薬", vaccine: "ワクチン", vet_visit: "通院", photo: "写真" };
@@ -37,55 +40,55 @@ function HealthCheckCard({ check }: { check: DailyHealthCheck & { date: string }
   if (check.pee?.condition) summary.push(`💧 ${check.pee.condition}`);
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-      <button onClick={() => setOpen((v) => !v)} className="w-full flex items-start gap-3 px-4 py-3 text-left active:bg-gray-50">
+    <Card padding="sm" className="!p-0 overflow-hidden">
+      <button onClick={() => setOpen((v) => !v)} className="w-full flex items-start gap-3 px-4 py-3 text-left active:opacity-70">
         <span className="text-2xl mt-0.5">🩺</span>
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-black text-gray-400 uppercase mb-1">体調チェック</p>
+          <p className="text-xs font-bold text-ink-faint mb-1">体調チェック</p>
           {summary.length > 0
-            ? <p className="text-sm text-gray-600 truncate">{summary.join("　")}</p>
-            : <p className="text-sm text-gray-400">記録あり</p>}
+            ? <p className="text-sm text-ink-soft truncate">{summary.join("　")}</p>
+            : <p className="text-sm text-ink-faint">記録あり</p>}
         </div>
-        <span className={`text-gray-300 text-xs mt-1 transition-transform duration-200 ${open ? "rotate-180" : ""}`}>▼</span>
+        <span className={`text-ink-faint text-xs mt-1 transition-transform duration-200 ${open ? "rotate-180" : ""}`}>▼</span>
       </button>
       {open && (
-        <div className="px-4 pb-4 space-y-3 border-t border-gray-50 pt-3">
+        <div className="px-4 pb-4 space-y-3 border-t border-cream pt-3">
           <div>
-            <p className="text-xs font-black text-gray-400 mb-1">⚡ 元気度</p>
+            <p className="text-xs font-bold text-ink-faint mb-1">⚡ 元気度</p>
             {check.energy > 0 ? (
               <div className="flex gap-1.5">
                 {[1, 2, 3, 4, 5].map((n) => (
-                  <div key={n} className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black ${n <= check.energy ? "bg-amber-500 text-white" : "bg-gray-100 text-gray-300"}`}>{n}</div>
+                  <div key={n} className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${n <= check.energy ? "bg-brand text-white" : "bg-cream text-ink-faint"}`}>{n}</div>
                 ))}
               </div>
-            ) : <p className="text-sm text-gray-400">記録なし</p>}
+            ) : <p className="text-sm text-ink-faint">記録なし</p>}
           </div>
           <div>
-            <p className="text-xs font-black text-gray-400 mb-1">🍚 食欲</p>
-            <p className="text-sm text-gray-700">{check.appetite || <span className="text-gray-400">記録なし</span>}</p>
+            <p className="text-xs font-bold text-ink-faint mb-1">🍚 食欲</p>
+            <p className="text-sm text-ink">{check.appetite || <span className="text-ink-faint">記録なし</span>}</p>
           </div>
           <div>
-            <p className="text-xs font-black text-gray-400 mb-1">💩 排泄</p>
-            <p className="text-sm text-gray-700">{check.elimination || <span className="text-gray-400">記録なし</span>}</p>
+            <p className="text-xs font-bold text-ink-faint mb-1">💩 排泄</p>
+            <p className="text-sm text-ink">{check.elimination || <span className="text-ink-faint">記録なし</span>}</p>
           </div>
           {/* 旧フォーマット（詳細版）のデータが残っている場合のみ表示 */}
           {(check.meals?.length || check.poop?.condition || check.poop?.memo || check.pee?.condition) ? (
             <>
               {(check.meals ?? []).map((meal) => (
                 <div key={meal.label}>
-                  <p className="text-xs font-black text-gray-400 mb-1">🍚 ご飯（{meal.label}）</p>
-                  <div className="text-sm text-gray-700 space-y-0.5">
+                  <p className="text-xs font-bold text-ink-faint mb-1">🍚 ご飯（{meal.label}）</p>
+                  <div className="text-sm text-ink space-y-0.5">
                     {meal.foodType && <p>フード：{meal.foodType}</p>}
                     {meal.amount && <p>量：{meal.amount}g</p>}
                     {meal.amountEaten && <p>食べた量：{meal.amountEaten}</p>}
-                    {!meal.foodType && !meal.amount && !meal.amountEaten && <p className="text-gray-400">記録なし</p>}
+                    {!meal.foodType && !meal.amount && !meal.amountEaten && <p className="text-ink-faint">記録なし</p>}
                   </div>
                 </div>
               ))}
               {(check.poop?.condition || check.poop?.memo) && (
                 <div>
-                  <p className="text-xs font-black text-gray-400 mb-1">💩 うんち（旧記録）</p>
-                  <div className="text-sm text-gray-700 space-y-0.5">
+                  <p className="text-xs font-bold text-ink-faint mb-1">💩 うんち（旧記録）</p>
+                  <div className="text-sm text-ink space-y-0.5">
                     {check.poop?.condition && <p>状態：{check.poop.condition}</p>}
                     {check.poop?.memo && <p>メモ：{check.poop.memo}</p>}
                   </div>
@@ -93,21 +96,21 @@ function HealthCheckCard({ check }: { check: DailyHealthCheck & { date: string }
               )}
               {check.pee?.condition && (
                 <div>
-                  <p className="text-xs font-black text-gray-400 mb-1">💧 おしっこ（旧記録）</p>
-                  <p className="text-sm text-gray-700">{check.pee.condition}</p>
+                  <p className="text-xs font-bold text-ink-faint mb-1">💧 おしっこ（旧記録）</p>
+                  <p className="text-sm text-ink">{check.pee.condition}</p>
                 </div>
               )}
             </>
           ) : null}
           {check.memo && (
             <div>
-              <p className="text-xs font-black text-gray-400 mb-1">📝 メモ</p>
-              <p className="text-sm text-gray-700 whitespace-pre-wrap">{check.memo}</p>
+              <p className="text-xs font-bold text-ink-faint mb-1">📝 メモ</p>
+              <p className="text-sm text-ink whitespace-pre-wrap">{check.memo}</p>
             </div>
           )}
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -147,77 +150,80 @@ export default function LogsPage() {
   ];
 
   return (
-    <div className="max-w-lg mx-auto pb-28">
-      <div className="flex items-center justify-between px-4 pt-6 pb-4">
-        <div className="flex items-center gap-1.5 bg-green-100 text-green-600 px-3 py-1.5 rounded-full">
-          <span className="text-sm">📋</span>
-          <span className="text-sm font-black">健康記録</span>
-        </div>
-        <Link href={`/dogs/${dogId}/logs/new`}
-          className="bg-amber-500 text-white text-sm font-bold px-4 py-2 rounded-full shadow-sm active:scale-95 transition-transform">
-          ＋ 記録
-        </Link>
-      </div>
+    <div className="min-h-screen bg-cream">
+      <div className="max-w-lg mx-auto pb-28">
 
-      <div className="px-4">
-        <div className="flex gap-2 overflow-x-auto pb-2 mb-5">
-          {FILTERS.map(({ key, label }) => (
-            <button key={key} onClick={() => setFilterType(key)}
-              className={`flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-bold border-2 transition-colors ${filterType === key ? "bg-amber-500 border-amber-500 text-white" : "bg-white border-gray-100 text-gray-500"}`}>
-              {label}
-            </button>
-          ))}
+        {/* ── トップバー ── */}
+        <div className="flex items-center justify-between px-5 pt-6 pb-5">
+          <div className="flex items-center gap-3">
+            <BackButton href={`/dogs/${dogId}`} />
+            <span className="text-lg font-black text-ink tracking-tight">健康記録</span>
+          </div>
+          <Link href={`/dogs/${dogId}/logs/new`}
+            className="bg-gradient-to-br from-brand-start to-brand-end text-white text-sm font-bold px-4 py-2 rounded-full shadow-md shadow-amber-200 active:scale-95 transition-transform">
+            ＋ 記録
+          </Link>
         </div>
 
-        {loading ? (
-          <div className="space-y-4">{[...Array(3)].map((_, i) => <div key={i} className="h-24 bg-white rounded-2xl animate-pulse shadow-sm" />)}</div>
-        ) : filterType === "health_check" ? (
-          healthChecks.length === 0 ? (
-            <div className="bg-white rounded-3xl p-10 text-center shadow-sm">
-              <p className="text-4xl mb-3">🩺</p>
-              <p className="text-gray-400">体調チェックの記録がありません</p>
-            </div>
+        <div className="px-5">
+          <div className="flex gap-2 overflow-x-auto pb-1 mb-5 -mx-1 px-1">
+            {FILTERS.map(({ key, label }) => (
+              <Chip key={key} label={label} active={filterType === key} onClick={() => setFilterType(key)} />
+            ))}
+          </div>
+
+          {loading ? (
+            <div className="space-y-4">{[...Array(3)].map((_, i) => <div key={i} className="h-20 bg-surface/60 rounded-2xl animate-pulse" />)}</div>
+          ) : filterType === "health_check" ? (
+            healthChecks.length === 0 ? (
+              <Card className="text-center py-10">
+                <p className="text-4xl mb-3">🩺</p>
+                <p className="text-ink-faint">体調チェックの記録がありません</p>
+              </Card>
+            ) : (
+              <div className="space-y-6">
+                {healthChecks.map((hc) => (
+                  <div key={hc.date}>
+                    <p className="text-xs font-bold text-ink-faint mb-2">{formatDate(hc.date)}</p>
+                    <HealthCheckCard check={hc} />
+                  </div>
+                ))}
+              </div>
+            )
+          ) : groups.length === 0 ? (
+            <Card className="text-center py-10">
+              <p className="text-4xl mb-3">📝</p>
+              <p className="text-ink-faint mb-4">記録がありません</p>
+              <Link href={`/dogs/${dogId}/logs/new`} className="text-brand font-bold text-sm">＋ 最初の記録をする</Link>
+            </Card>
           ) : (
             <div className="space-y-6">
-              {healthChecks.map((hc) => (
-                <div key={hc.date}>
-                  <p className="text-xs font-black text-gray-400 mb-2">{formatDate(hc.date)}</p>
-                  <HealthCheckCard check={hc} />
+              {groups.map((group) => (
+                <div key={group.date}>
+                  <p className="text-xs font-bold text-ink-faint mb-2">{formatDate(group.date)}</p>
+                  <div className="space-y-2">
+                    {group.logs.map((log) => (
+                      <Card key={log.id} padding="sm">
+                        <div className="flex items-start gap-3">
+                          <div className="w-10 h-10 rounded-full bg-brand-soft flex items-center justify-center text-lg flex-shrink-0">
+                            {LOG_ICON[log.type]}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-bold text-ink-faint">{LOG_LABEL[log.type]}</p>
+                            {log.type === "weight" && <p className="text-lg font-black text-ink">{log.weight} kg</p>}
+                            {log.note && <p className="text-sm text-ink mt-0.5">{log.note}</p>}
+                            {log.photoURL && <img src={log.photoURL} alt="記録写真" className="mt-2 rounded-xl w-full max-h-48 object-cover" />}
+                          </div>
+                          <button onClick={() => handleDelete(log.id)} className="text-ink-faint text-xl pl-2 active:text-danger transition-colors">×</button>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>
-          )
-        ) : groups.length === 0 ? (
-          <div className="bg-white rounded-3xl p-10 text-center shadow-sm">
-            <p className="text-4xl mb-3">📝</p>
-            <p className="text-gray-400 mb-4">記録がありません</p>
-            <Link href={`/dogs/${dogId}/logs/new`} className="text-amber-500 font-bold text-sm">＋ 最初の記録をする</Link>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {groups.map((group) => (
-              <div key={group.date}>
-                <p className="text-xs font-black text-gray-400 mb-2">{formatDate(group.date)}</p>
-                <div className="space-y-2">
-                  {group.logs.map((log) => (
-                    <div key={log.id} className="bg-white rounded-2xl px-4 py-3 shadow-sm">
-                      <div className="flex items-start gap-3">
-                        <span className="text-2xl mt-0.5">{LOG_ICON[log.type]}</span>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-black text-gray-400 uppercase">{LOG_LABEL[log.type]}</p>
-                          {log.type === "weight" && <p className="text-lg font-black text-gray-800">{log.weight} kg</p>}
-                          {log.note && <p className="text-sm text-gray-700 mt-0.5">{log.note}</p>}
-                          {log.photoURL && <img src={log.photoURL} alt="記録写真" className="mt-2 rounded-xl w-full max-h-48 object-cover" />}
-                        </div>
-                        <button onClick={() => handleDelete(log.id)} className="text-gray-200 text-xl pl-2 active:text-red-400 transition-colors">×</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
