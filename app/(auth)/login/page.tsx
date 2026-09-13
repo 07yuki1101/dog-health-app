@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { signInWithRedirect, signInWithCredential, GoogleAuthProvider } from "firebase/auth";
+import { signInWithPopup, signInWithCredential, GoogleAuthProvider } from "firebase/auth";
 import { getFirebaseAuth, googleProvider } from "@/lib/firebase";
 import { useAuth } from "@/components/AuthProvider";
 
@@ -35,8 +35,13 @@ export default function LoginPage() {
         const credential = GoogleAuthProvider.credential(idToken);
         await signInWithCredential(getFirebaseAuth(), credential);
       } else {
-        // Web ブラウザ: 通常の redirect フロー
-        await signInWithRedirect(getFirebaseAuth(), googleProvider);
+        // Web ブラウザ: popup フロー
+        // signInWithRedirect は authDomain（firebaseapp.com）とアプリのドメイン間で
+        // Cookie/Storage をやり取りする必要があり、iOS SafariのIntelligent Tracking
+        // Prevention（ITP）にブロックされて getRedirectResult() が結果を取得できず、
+        // ログイン画面に戻ってループする不具合があったため popup に変更。
+        // （Capacitorネイティブは isNativeApp() 分岐で別経路のため影響なし）
+        await signInWithPopup(getFirebaseAuth(), googleProvider);
       }
     } catch (err: unknown) {
       const e = err as { code?: string; message?: string };
