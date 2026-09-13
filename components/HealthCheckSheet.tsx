@@ -4,6 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { getDogs, getDailyHealthCheck, saveDailyHealthCheck } from "@/lib/firestore";
 import type { Dog, DailyHealthCheck, MealAmountEaten, EliminationStatus } from "@/lib/types";
+import { Card } from "@/components/ui/Card";
+import { SectionHeading } from "@/components/ui/SectionHeading";
+import { Chip, Tag } from "@/components/ui/Chip";
 
 function getTodayJST(): string {
   return new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split("T")[0];
@@ -26,29 +29,6 @@ const ENERGY_LEVELS: { value: number; icon: string; label: string }[] = [
 
 const APPETITE_OPTIONS: MealAmountEaten[] = ["完食", "半分", "少し", "食べてない"];
 const ELIMINATION_OPTIONS: EliminationStatus[] = ["あり", "なし"];
-
-function TapChip({
-  label,
-  active,
-  onClick,
-}: {
-  label: string;
-  active: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`px-4 py-2 rounded-full text-sm font-bold border-2 transition-colors active:scale-95 ${
-        active
-          ? "bg-amber-500 text-white border-amber-500"
-          : "border-gray-100 text-gray-500 bg-white"
-      }`}
-    >
-      {label}
-    </button>
-  );
-}
 
 export function HealthCheckSheet() {
   const { familyId } = useAuth();
@@ -137,39 +117,25 @@ export function HealthCheckSheet() {
 
   if (dogs.length === 0 && !loading) {
     return (
-      <section className="mb-6">
-        <div className="flex items-center gap-1.5 bg-green-100 text-green-600 px-3 py-1.5 rounded-full mb-3 self-start">
-          <span className="text-sm">🩺</span>
-          <span className="text-xs font-black">今日の体調チェック</span>
-        </div>
-        <div className="bg-white rounded-2xl p-6 text-center shadow-sm">
-          <p className="text-gray-400 text-sm">まずわんこを登録してください</p>
-        </div>
+      <section className="mb-8">
+        <SectionHeading icon="🩺" title="今日の体調チェック" />
+        <Card className="text-center">
+          <p className="text-ink-faint text-sm">まずわんこを登録してください</p>
+        </Card>
       </section>
     );
   }
 
+  // まだ何も記録していないか（＝これからやるべきこと）を判定
+  const isUnrecorded = !loading && form.energy === 0 && !form.appetite && !form.elimination;
+
   return (
-    <section className="mb-6">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between mb-3 active:opacity-70"
-      >
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 bg-green-100 text-green-600 px-3 py-1.5 rounded-full">
-            <span className="text-sm">🩺</span>
-            <span className="text-xs font-black">今日の体調チェック</span>
-          </div>
-          {saved && !open && (
-            <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-600 font-medium">
-              保存済み ✓
-            </span>
-          )}
-        </div>
-        <span className={`text-gray-400 text-xs transition-transform duration-200 ${open ? "rotate-180" : ""}`}>
-          ▼
-        </span>
-      </button>
+    <section className="mb-8">
+      <SectionHeading
+        icon="🩺"
+        title="今日の体調チェック"
+        trailing={saved && !open ? <Tag label="保存済み" tone="success" /> : undefined}
+      />
 
       {open && dogs.length > 1 && (
         <div className="flex gap-2 mb-3 overflow-x-auto pb-1">
@@ -179,8 +145,8 @@ export function HealthCheckSheet() {
               onClick={() => { setSelectedDogId(dog.id); setSaved(false); }}
               className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
                 selectedDogId === dog.id
-                  ? "bg-amber-500 text-white"
-                  : "bg-white text-gray-600 shadow-sm"
+                  ? "bg-brand text-white"
+                  : "bg-surface text-ink-soft shadow-sm"
               }`}
             >
               {dog.name}
@@ -189,18 +155,37 @@ export function HealthCheckSheet() {
         </div>
       )}
 
-      {!open && (
+      {!open && isUnrecorded && (
+        // ── 未記録: 「今やること」として最も目立つトーンで提示する ──
         <button
           onClick={() => setOpen(true)}
-          className="w-full bg-white rounded-2xl shadow-sm px-4 py-3 flex items-center justify-between active:scale-98 transition-transform"
+          className="w-full text-left rounded-3xl p-5 flex items-center gap-4 border-2 border-brand-start/40 bg-gradient-to-br from-brand-soft to-white shadow-sm active:scale-[0.98] transition-transform"
         >
-          <span className="text-sm text-gray-400">タップして記録する（3タップで完了）</span>
-          <span className="text-amber-400 text-lg">＋</span>
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand-start to-brand-end flex items-center justify-center text-2xl flex-shrink-0 shadow-sm">
+            🐾
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-ink text-sm">今日はまだ記録がありません</p>
+            <p className="text-ink-soft text-xs mt-0.5">3タップで完了します</p>
+          </div>
+          <span className="text-brand text-xl flex-shrink-0">＋</span>
+        </button>
+      )}
+
+      {!open && !isUnrecorded && (
+        // ── 記録済み: 情報を圧縮し、確認・編集のための控えめな行として表示する ──
+        <button
+          onClick={() => setOpen(true)}
+          className="w-full flex items-center gap-3 bg-surface rounded-2xl px-4 py-3 shadow-sm shadow-black/[0.03] active:scale-[0.98] transition-transform"
+        >
+          <span className="text-lg flex-shrink-0">✅</span>
+          <span className="flex-1 text-left text-sm text-ink-soft font-medium">今日の体調チェックは記録済みです</span>
+          <span className="text-ink-faint text-xs font-semibold">編集する</span>
         </button>
       )}
 
       {open && (
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <Card padding="sm" className="overflow-hidden !p-0">
           {loading ? (
             <div className="p-8 flex justify-center">
               <div className="text-2xl animate-pulse">🐾</div>
@@ -208,8 +193,8 @@ export function HealthCheckSheet() {
           ) : (
             <>
               {/* ① 元気度 */}
-              <div className="px-4 py-4 border-b border-gray-50">
-                <h3 className="text-sm font-semibold text-gray-700 mb-3">⚡  元気度</h3>
+              <div className="px-5 py-5 border-b border-cream">
+                <h3 className="text-sm font-bold text-ink mb-3">⚡ 元気度</h3>
                 <div className="flex justify-between gap-1">
                   {ENERGY_LEVELS.map(({ value, icon, label }) => (
                     <button
@@ -217,27 +202,27 @@ export function HealthCheckSheet() {
                       onClick={() => selectEnergy(value)}
                       aria-label={label}
                       className={`flex-1 flex flex-col items-center gap-1 py-2 rounded-2xl transition-all active:scale-90 ${
-                        form.energy === value ? "bg-amber-100 scale-105" : ""
+                        form.energy === value ? "bg-brand-soft scale-105" : ""
                       }`}
                     >
-                      <span className={`text-2xl transition-transform ${form.energy === value ? "scale-110" : "opacity-50"}`}>
+                      <span className={`text-2xl transition-transform ${form.energy === value ? "scale-110" : "opacity-40"}`}>
                         {icon}
                       </span>
                     </button>
                   ))}
                 </div>
                 <div className="flex justify-between mt-1 px-1">
-                  <span className="text-[10px] text-gray-300">元気ない</span>
-                  <span className="text-[10px] text-gray-300">とても元気</span>
+                  <span className="text-[10px] text-ink-faint">元気ない</span>
+                  <span className="text-[10px] text-ink-faint">とても元気</span>
                 </div>
               </div>
 
               {/* ② 食欲 */}
-              <div className="px-4 py-4 border-b border-gray-50">
-                <h3 className="text-sm font-semibold text-gray-700 mb-3">🍚  食欲</h3>
+              <div className="px-5 py-5 border-b border-cream">
+                <h3 className="text-sm font-bold text-ink mb-3">🍚 食欲</h3>
                 <div className="flex gap-2 flex-wrap">
                   {APPETITE_OPTIONS.map((opt) => (
-                    <TapChip
+                    <Chip
                       key={opt}
                       label={opt}
                       active={form.appetite === opt}
@@ -248,11 +233,11 @@ export function HealthCheckSheet() {
               </div>
 
               {/* ③ 排泄 */}
-              <div className="px-4 py-4 border-b border-gray-50">
-                <h3 className="text-sm font-semibold text-gray-700 mb-3">💩  排泄</h3>
+              <div className="px-5 py-5 border-b border-cream">
+                <h3 className="text-sm font-bold text-ink mb-3">💩 排泄</h3>
                 <div className="flex gap-2 flex-wrap">
                   {ELIMINATION_OPTIONS.map((opt) => (
-                    <TapChip
+                    <Chip
                       key={opt}
                       label={opt}
                       active={form.elimination === opt}
@@ -263,10 +248,10 @@ export function HealthCheckSheet() {
               </div>
 
               {/* メモ（任意・デフォルト非表示） */}
-              <div className="px-4 py-3">
+              <div className="px-5 py-4">
                 {memoOpen ? (
                   <div>
-                    <h3 className="text-xs font-bold text-gray-400 mb-2">📝 メモ（任意）</h3>
+                    <h3 className="text-xs font-bold text-ink-faint mb-2">📝 メモ（任意）</h3>
                     <textarea
                       value={form.memo}
                       onChange={(e) => handleMemoChange(e.target.value)}
@@ -274,27 +259,33 @@ export function HealthCheckSheet() {
                       placeholder="気になることがあれば書いてください"
                       rows={2}
                       autoFocus
-                      className="w-full text-sm text-gray-700 outline-none placeholder-gray-300 resize-none border-b border-gray-100 pb-1"
+                      className="w-full text-sm text-ink outline-none placeholder-ink-faint resize-none border-b border-cream pb-1"
                     />
                   </div>
                 ) : (
                   <button
                     onClick={() => setMemoOpen(true)}
-                    className="text-sm text-amber-500 font-medium active:opacity-70"
+                    className="text-sm text-brand font-bold active:opacity-70"
                   >
                     ＋ メモを書く（任意）
                   </button>
                 )}
               </div>
 
-              {saved && (
-                <div className="px-4 pb-4">
-                  <span className="text-xs text-green-600 font-medium">✓ 保存しました</span>
-                </div>
-              )}
+              <div className="px-5 pb-4 flex items-center justify-between">
+                <span className={`text-xs font-medium transition-opacity ${saved ? "text-success opacity-100" : "opacity-0"}`}>
+                  ✓ 保存しました
+                </span>
+                <button
+                  onClick={() => setOpen(false)}
+                  className="text-xs text-ink-faint font-semibold active:opacity-60"
+                >
+                  閉じる
+                </button>
+              </div>
             </>
           )}
-        </div>
+        </Card>
       )}
     </section>
   );
