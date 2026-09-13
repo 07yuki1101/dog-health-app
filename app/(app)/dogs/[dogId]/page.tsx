@@ -6,7 +6,8 @@ import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { getDog, getReminders, getLogs, getDailyHealthChecks } from "@/lib/firestore";
 import type { Dog, Reminder, HealthLog, DailyHealthCheck } from "@/lib/types";
-import { REMINDER_LABELS } from "@/lib/types";
+import { Card } from "@/components/ui/Card";
+import { SectionHeading } from "@/components/ui/SectionHeading";
 
 function calcAge(birthDate: string) {
   const birth = new Date(birthDate);
@@ -17,10 +18,10 @@ function calcAge(birthDate: string) {
 }
 
 const QUICK_ACTIONS = [
-  { href: (id: string) => `/dogs/${id}/reminders/new`, icon: "🔔", label: "リマインド", color: "bg-pink-100" },
-  { href: (id: string) => `/dogs/${id}/cares`,          icon: "🛁", label: "定期ケア",   color: "bg-sky-100" },
-  { href: (id: string) => `/dogs/${id}/logs/new`,        icon: "📝", label: "記録する",   color: "bg-green-100" },
-  { href: (id: string) => `/dogs/${id}/logs`,            icon: "📋", label: "履歴",       color: "bg-violet-100" },
+  { href: (id: string) => `/dogs/${id}/reminders`, icon: "🔔", label: "リマインド" },
+  { href: (id: string) => `/dogs/${id}/cares`,      icon: "🛁", label: "定期ケア" },
+  { href: (id: string) => `/dogs/${id}/logs/new`,   icon: "📝", label: "記録する" },
+  { href: (id: string) => `/dogs/${id}/logs`,       icon: "📋", label: "履歴" },
 ];
 
 export default function DogProfilePage() {
@@ -48,152 +49,143 @@ export default function DogProfilePage() {
   const latestWeight = logs.find((l) => l.type === "weight")?.weight;
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-amber-50">
+    <div className="min-h-screen flex items-center justify-center bg-cream">
       <div className="text-5xl animate-pulse">🐾</div>
     </div>
   );
   if (!dog) return null;
 
   return (
-    <div className="max-w-lg mx-auto pb-28">
-      {/* ── トップバー ── */}
-      <div className="flex items-center justify-between px-4 pt-6 pb-4">
-        <Link href="/dogs" className="w-9 h-9 rounded-full bg-white shadow-sm flex items-center justify-center text-gray-500 text-lg active:scale-90 transition-transform">
-          ‹
-        </Link>
-        <Link href={`/dogs/${dogId}/edit`} className="flex items-center gap-1 bg-orange-100 text-orange-600 px-3 py-1.5 rounded-full active:scale-95 transition-transform">
-          <span className="text-sm">✏️</span>
-          <span className="text-sm font-black">編集</span>
-        </Link>
-      </div>
+    <div className="min-h-screen bg-cream">
+      <div className="max-w-lg mx-auto pb-28">
 
-      {/* ── プロフィールカード ── */}
-      <div className="px-4 mb-4">
-        <div className="bg-white rounded-3xl p-5 shadow-sm flex items-center gap-4">
-          <div className="w-20 h-20 rounded-full bg-amber-100 flex items-center justify-center text-4xl overflow-hidden flex-shrink-0 ring-4 ring-amber-200 shadow-sm">
-            {dog.photoURL ? <img src={dog.photoURL} alt={dog.name} className="w-full h-full object-cover" /> : "🐕"}
-          </div>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-black text-gray-800">{dog.name}</h1>
-            {dog.breed && <p className="text-sm text-gray-400">{dog.breed}</p>}
-            <div className="flex flex-wrap gap-x-2 mt-1 text-gray-500 text-xs">
-              <span>{dog.gender === "male" ? "♂ オス" : "♀ メス"}</span>
-              <span>·</span>
-              <span>{calcAge(dog.birthDate)}</span>
-              {latestWeight && <><span>·</span><span>⚖️ {latestWeight}kg</span></>}
-            </div>
-          </div>
+        {/* ── トップバー ── */}
+        <div className="flex items-center justify-between px-5 pt-6 pb-4">
+          <Link href="/dogs" className="w-9 h-9 rounded-full bg-surface shadow-sm flex items-center justify-center text-ink-soft text-lg active:scale-90 transition-transform">
+            ‹
+          </Link>
+          <Link href={`/dogs/${dogId}/edit`} className="flex items-center gap-1 bg-brand-soft text-brand px-3 py-1.5 rounded-full active:scale-95 transition-transform">
+            <span className="text-sm">✏️</span>
+            <span className="text-sm font-bold">編集</span>
+          </Link>
         </div>
-      </div>
 
-      {/* ── 通院サマリーへの入口 ── */}
-      <div className="px-4 mb-4">
-        <Link
-          href={`/dogs/${dogId}/summary`}
-          className="flex items-center justify-between bg-gradient-to-r from-sky-500 to-violet-500 rounded-2xl px-5 py-4 shadow-sm active:scale-98 transition-transform"
-        >
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">🏥</span>
-            <div>
-              <p className="text-white font-black text-sm">通院サマリー</p>
-              <p className="text-white/80 text-xs">体調・体重・投薬をまとめて確認</p>
+        <div className="px-5">
+
+          {/* ── プロフィールカード ── */}
+          <Card className="flex items-center gap-4 mb-4">
+            <div className="w-20 h-20 rounded-full bg-brand-soft flex items-center justify-center text-4xl overflow-hidden flex-shrink-0 ring-4 ring-brand-soft">
+              {dog.photoURL ? <img src={dog.photoURL} alt={dog.name} className="w-full h-full object-cover" /> : "🐕"}
             </div>
-          </div>
-          <span className="text-white/80 text-lg">›</span>
-        </Link>
-      </div>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl font-black text-ink">{dog.name}</h1>
+              {dog.breed && <p className="text-sm text-ink-faint">{dog.breed}</p>}
+              <div className="flex flex-wrap gap-x-2 mt-1 text-ink-soft text-xs">
+                <span>{dog.gender === "male" ? "♂ オス" : "♀ メス"}</span>
+                <span>·</span>
+                <span>{calcAge(dog.birthDate)}</span>
+                {latestWeight && <><span>·</span><span>⚖️ {latestWeight}kg</span></>}
+              </div>
+            </div>
+          </Card>
 
-      {/* ── クイックアクション ── */}
-      <div className="px-4 mb-5">
-        <div className="grid grid-cols-4 gap-2">
-          {QUICK_ACTIONS.map((a) => (
-            <Link
-              key={a.label}
-              href={a.href(dogId)}
-              className={`flex flex-col items-center ${a.color} rounded-2xl py-4 shadow-sm active:scale-95 transition-transform`}
-            >
-              <span className="text-2xl mb-1">{a.icon}</span>
-              <span className="text-xs font-bold text-gray-700">{a.label}</span>
-            </Link>
-          ))}
+          {/* ── 通院サマリーへの入口 ── */}
+          <Link
+            href={`/dogs/${dogId}/summary`}
+            className="flex items-center justify-between bg-gradient-to-br from-brand-start to-brand-end rounded-3xl px-5 py-4 shadow-md shadow-amber-200 active:scale-[0.98] transition-transform mb-4"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🏥</span>
+              <div>
+                <p className="text-white font-black text-sm">通院サマリー</p>
+                <p className="text-white/80 text-xs">体調・体重・投薬をまとめて確認</p>
+              </div>
+            </div>
+            <span className="text-white/80 text-lg">›</span>
+          </Link>
+
+          {/* ── クイックアクション ── */}
+          <div className="grid grid-cols-4 gap-2 mb-8">
+            {QUICK_ACTIONS.map((a) => (
+              <Link
+                key={a.label}
+                href={a.href(dogId)}
+                className="flex flex-col items-center gap-1.5 bg-surface rounded-2xl py-4 shadow-sm shadow-black/[0.03] active:scale-95 transition-transform"
+              >
+                <span className="w-9 h-9 rounded-full bg-brand-soft flex items-center justify-center text-lg">{a.icon}</span>
+                <span className="text-xs font-bold text-ink">{a.label}</span>
+              </Link>
+            ))}
+          </div>
+
+          {/* ── 直近のリマインド ── */}
+          <section className="mb-8">
+            <SectionHeading icon="🔔" title="直近のリマインド" action={{ label: "すべて見る", href: `/dogs/${dogId}/reminders` }} />
+            {reminders.length === 0 ? (
+              <Card className="text-center">
+                <p className="text-ink-faint text-sm">リマインドなし</p>
+              </Card>
+            ) : (
+              <div className="space-y-2">
+                {reminders.map((r) => (
+                  <Link key={r.id} href={`/dogs/${dogId}/reminders`}
+                    className="flex items-center gap-3 bg-surface rounded-2xl px-4 py-3 shadow-sm shadow-black/[0.03] active:scale-[0.98] transition-transform">
+                    <div className="w-10 h-10 rounded-full bg-brand-soft flex items-center justify-center text-lg flex-shrink-0">
+                      {r.type === "medication" ? "💊" : r.type === "vaccine" ? "💉" : "🏥"}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-ink truncate">{r.title}</p>
+                      <p className="text-xs text-ink-faint">{r.dueDate}</p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* ── 最近の記録 ── */}
+          <section>
+            <SectionHeading icon="📋" title="最近の記録" action={{ label: "すべて見る", href: `/dogs/${dogId}/logs` }} />
+            {!latestHealthCheck && logs.length === 0 ? (
+              <Card className="text-center">
+                <p className="text-ink-faint text-sm">まだ記録がありません</p>
+              </Card>
+            ) : (
+              <div className="space-y-2">
+                {latestHealthCheck && (
+                  <Link href={`/dogs/${dogId}/logs`} className="flex items-start gap-3 bg-surface rounded-2xl px-4 py-3 shadow-sm shadow-black/[0.03] active:scale-[0.98] transition-transform">
+                    <div className="w-10 h-10 rounded-full bg-brand-soft flex items-center justify-center text-lg flex-shrink-0 mt-0.5">🩺</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-bold text-ink">体調チェック</p>
+                        <p className="text-xs text-ink-faint flex-shrink-0">{latestHealthCheck.date}</p>
+                      </div>
+                      <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
+                        <span className="text-xs text-ink-soft">元気度 {"⭐".repeat(latestHealthCheck.energy)}</span>
+                        {latestHealthCheck.appetite && <span className="text-xs text-ink-soft">食欲: {latestHealthCheck.appetite}</span>}
+                        {latestHealthCheck.elimination && <span className="text-xs text-ink-soft">排泄: {latestHealthCheck.elimination}</span>}
+                        {latestHealthCheck.poop?.condition && <span className="text-xs text-ink-soft">うんち: {latestHealthCheck.poop.condition}</span>}
+                        {latestHealthCheck.memo && <span className="text-xs text-ink-faint truncate">{latestHealthCheck.memo}</span>}
+                      </div>
+                    </div>
+                  </Link>
+                )}
+                {logs.map((l) => (
+                  <div key={l.id} className="flex items-center gap-3 bg-surface rounded-2xl px-4 py-3 shadow-sm shadow-black/[0.03]">
+                    <div className="w-10 h-10 rounded-full bg-brand-soft flex items-center justify-center text-lg flex-shrink-0">
+                      {l.type === "weight" ? "⚖️" : l.type === "photo" ? "📷" : l.type === "medication" ? "💊" : l.type === "vaccine" ? "💉" : l.type === "vet_visit" ? "🏥" : "📝"}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-ink font-medium truncate">{l.type === "weight" ? `${l.weight}kg` : l.note ?? "記録"}</p>
+                      <p className="text-xs text-ink-faint">{l.date}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
         </div>
-      </div>
-
-      <div className="px-4 space-y-5">
-        {/* ── 直近のリマインド ── */}
-        <section>
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-1.5 bg-pink-100 text-pink-600 px-3 py-1.5 rounded-full">
-              <span className="text-sm">🔔</span>
-              <span className="text-xs font-black">直近のリマインド</span>
-            </div>
-            <Link href={`/dogs/${dogId}/reminders`} className="text-xs text-gray-400 font-semibold">すべて見る →</Link>
-          </div>
-          {reminders.length === 0 ? (
-            <div className="bg-white rounded-2xl p-5 text-center shadow-sm">
-              <p className="text-gray-400 text-sm">リマインドなし</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {reminders.map((r) => (
-                <Link key={r.id} href={`/dogs/${dogId}/reminders`}
-                  className="flex items-center gap-3 bg-white rounded-2xl px-4 py-3 shadow-sm active:scale-98 transition-transform">
-                  <span className="text-xl">{r.type === "medication" ? "💊" : r.type === "vaccine" ? "💉" : "🏥"}</span>
-                  <div className="flex-1">
-                    <p className="text-sm font-bold text-gray-800">{r.title}</p>
-                    <p className="text-xs text-gray-400">{r.dueDate}</p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-        </section>
-
-        {/* ── 最近の記録 ── */}
-        <section>
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-1.5 bg-green-100 text-green-600 px-3 py-1.5 rounded-full">
-              <span className="text-sm">📋</span>
-              <span className="text-xs font-black">最近の記録</span>
-            </div>
-            <Link href={`/dogs/${dogId}/logs`} className="text-xs text-gray-400 font-semibold">すべて見る →</Link>
-          </div>
-          {!latestHealthCheck && logs.length === 0 ? (
-            <div className="bg-white rounded-2xl p-5 text-center shadow-sm">
-              <p className="text-gray-400 text-sm">まだ記録がありません</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {latestHealthCheck && (
-                <Link href={`/dogs/${dogId}/logs`} className="flex items-start gap-3 bg-white rounded-2xl px-4 py-3 shadow-sm active:scale-98 transition-transform">
-                  <span className="text-xl mt-0.5">🩺</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-sm font-bold text-gray-800">体調チェック</p>
-                      <p className="text-xs text-gray-400 flex-shrink-0">{latestHealthCheck.date}</p>
-                    </div>
-                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
-                      <span className="text-xs text-gray-500">元気度 {"⭐".repeat(latestHealthCheck.energy)}</span>
-                      {latestHealthCheck.appetite && <span className="text-xs text-gray-500">食欲: {latestHealthCheck.appetite}</span>}
-                      {latestHealthCheck.elimination && <span className="text-xs text-gray-500">排泄: {latestHealthCheck.elimination}</span>}
-                      {latestHealthCheck.poop?.condition && <span className="text-xs text-gray-500">うんち: {latestHealthCheck.poop.condition}</span>}
-                      {latestHealthCheck.memo && <span className="text-xs text-gray-400 truncate">{latestHealthCheck.memo}</span>}
-                    </div>
-                  </div>
-                </Link>
-              )}
-              {logs.map((l) => (
-                <div key={l.id} className="flex items-center gap-3 bg-white rounded-2xl px-4 py-3 shadow-sm">
-                  <span className="text-xl">{l.type === "weight" ? "⚖️" : l.type === "photo" ? "📷" : l.type === "medication" ? "💊" : l.type === "vaccine" ? "💉" : l.type === "vet_visit" ? "🏥" : "📝"}</span>
-                  <div className="flex-1">
-                    <p className="text-sm text-gray-700 font-medium">{l.type === "weight" ? `${l.weight}kg` : l.note ?? "記録"}</p>
-                    <p className="text-xs text-gray-400">{l.date}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
       </div>
     </div>
   );

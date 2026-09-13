@@ -12,8 +12,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
 
+  // "/dogs/new"（犬の新規登録フォーム）は犬のプロフィール配下ではないため除外する。
   const dogIdMatch = pathname.match(/\/dogs\/([^/]+)/);
-  const dogId = dogIdMatch?.[1];
+  const dogId = dogIdMatch?.[1] === "new" ? undefined : dogIdMatch?.[1];
 
   useEffect(() => {
     if (loading) return;
